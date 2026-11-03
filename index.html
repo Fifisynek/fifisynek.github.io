@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0d0f14">
+  <meta name="description" content="SKINLAB — darmowy symulator otwierania skrzynek CS2. Zbieraj skiny, buduj kolekcję i poluj na swój wymarzony drop.">
+  <title>SKINLAB — CS2 Case Simulator</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff783e'/%3E%3Cpath d='M18 22h28v22H18zM24 22v-6h16v6M18 30h28M29 28h6v7h-6z' fill='none' stroke='%230d0f14' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="image-map.js"></script>
+  <script defer src="catalog.js"></script>
+  <script defer src="game.js"></script>
+  <script defer src="career-view.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8l9-5Zm0 10 9-5M12 13 3 8m9 5v9M7.5 5.5l9 5"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M4 7h16l1 14H3L4 7Zm4 1V6a4 4 0 0 1 8 0v2"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 7H5a2 2 0 0 1 0-4h13v4M4 7v12a2 2 0 0 0 2 2h14V7m0 5h-6v5h6"/><path d="M16 14.5h.01"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8L21 9h-8l1-7Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6h12v12"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="5"/><path d="m12 12 9 9m-5-5 3-3m0 6 3-3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L20 5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 3h8v7a4 4 0 0 1-8 0V3Zm0 2H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 2v6m-4 1h8"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><path d="M3 8h18v4H3V8Zm2 4v9h14v-9m-7-4v13M12 8s-7 1-7-3a2 2 0 0 1 4-1l3 4Zm0 0s7 1 7-3a2 2 0 0 0-4-1l-3 4Z"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5V4Zm5 5 6 6m0-6-6 6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 2 8 4v6c0 6-8 10-8 10S4 18 4 12V6l8-4Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C8 2 3 3 3 3v16s5-1 9 2c4-3 9-2 9-2V3s-5-1-9 2Zm0 0v16"/></symbol>
+  </defs></svg>
+  <a class="skip-link" href="#main">Przejdź do treści</a>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="#cases" aria-label="SKINLAB — strona główna"><span class="brand-mark"><svg class="icon"><use href="#i-box"/></svg></span><span>SKIN<span class="brand-light">LAB</span><small>CASE SIMULATOR</small></span></a>
+      <nav class="nav" aria-label="Nawigacja główna">
+        <a href="#cases" data-nav="cases"><svg class="icon"><use href="#i-box"/></svg><span>Skrzynki</span></a>
+        <a href="#shop" data-nav="shop"><svg class="icon"><use href="#i-bag"/></svg><span>Sklep</span></a>
+        <a href="#inventory" data-nav="inventory"><svg class="icon"><use href="#i-grid"/></svg><span>Ekwipunek</span><b id="inventory-count" class="nav-count" hidden>0</b></a>
+        <a href="#career" data-nav="career"><svg class="icon"><use href="#i-trophy"/></svg><span>Kariera</span><b id="career-count" class="nav-count reward-count" hidden>0</b></a>
+        <a href="#earn" data-nav="earn"><svg class="icon"><use href="#i-bolt"/></svg><span>Zarabiaj</span></a>
+      </nav>
+      <div class="account"><button id="sound-toggle" class="icon-button sound-button" title="Dźwięk" aria-label="Wyłącz dźwięk"></button><a href="#earn" class="balance" title="Przejdź do zarabiania"><svg class="icon"><use href="#i-wallet"/></svg><span id="balance">$100.00</span><b>+</b></a><a class="avatar level-avatar" href="#career" aria-label="Twoja kariera"><small>LV</small><b id="player-level">1</b><span></span></a></div>
+    </div>
+  </header>
+  <div class="collection-strip"><div class="strip-inner"><span class="strip-label"><span class="live-dot"></span> W PULI SKRZYNEK</span><div id="collection-ticker" class="ticker-items"></div><span class="strip-note">Twój następny drop?</span></div></div>
+  <main id="main" tabindex="-1"><div id="app" class="page"></div></main>
+  <footer class="footer"><div class="footer-inner"><a href="#cases" class="footer-brand">SKIN<span>LAB</span><span class="footer-tag">Stworzony dla frajdy. I dla tego jednego dropu.</span></a><span>Symulator fanowski · Wirtualne środki · Bez wpłat i wypłat</span><button class="text-button" data-action="about">O projekcie <svg class="icon"><use href="#i-up"/></svg></button></div></footer>
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite" aria-atomic="true"></div>
+  <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
+  <noscript><p class="no-script">Włącz JavaScript, aby uruchomić SKINLAB.</p></noscript>
+</body>
+</html>
