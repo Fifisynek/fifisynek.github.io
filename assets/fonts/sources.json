@@ -1,0 +1,145 @@
+{
+  "stylesheet": "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700;800&display=swap",
+  "fonts": [
+    {
+      "name": "barlow-700-latin-ext.woff2",
+      "family": "Barlow",
+      "weight": "700",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3t-4s6VospT4.woff2"
+    },
+    {
+      "name": "barlow-condensed-500-latin-ext.woff2",
+      "family": "Barlow Condensed",
+      "weight": "500",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B4-Lwz3jWuZEC.woff2"
+    },
+    {
+      "name": "barlow-condensed-700-latin-ext.woff2",
+      "family": "Barlow Condensed",
+      "weight": "700",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B46r2z3jWuZEC.woff2"
+    },
+    {
+      "name": "barlow-400-latin-ext.woff2",
+      "family": "Barlow",
+      "weight": "400",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHpv4kjgoGqM7E_Ass52Hs.woff2"
+    },
+    {
+      "name": "barlow-800-latin-ext.woff2",
+      "family": "Barlow",
+      "weight": "800",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3q-0s6VospT4.woff2"
+    },
+    {
+      "name": "barlow-600-latin-ext.woff2",
+      "family": "Barlow",
+      "weight": "600",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E30-8s6VospT4.woff2"
+    },
+    {
+      "name": "barlow-condensed-800-latin-ext.woff2",
+      "family": "Barlow Condensed",
+      "weight": "800",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B47b1z3jWuZEC.woff2"
+    },
+    {
+      "name": "barlow-condensed-900-latin.woff2",
+      "family": "Barlow Condensed",
+      "weight": "900",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B45L0z3bWuQ.woff2"
+    },
+    {
+      "name": "barlow-condensed-600-latin-ext.woff2",
+      "family": "Barlow Condensed",
+      "weight": "600",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B4873z3jWuZEC.woff2"
+    },
+    {
+      "name": "barlow-condensed-900-latin-ext.woff2",
+      "family": "Barlow Condensed",
+      "weight": "900",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B45L0z3jWuZEC.woff2"
+    },
+    {
+      "name": "barlow-500-latin-ext.woff2",
+      "family": "Barlow",
+      "weight": "500",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3_-gs6VospT4.woff2"
+    },
+    {
+      "name": "barlow-700-latin.woff2",
+      "family": "Barlow",
+      "weight": "700",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3t-4s51os.woff2"
+    },
+    {
+      "name": "barlow-600-latin.woff2",
+      "family": "Barlow",
+      "weight": "600",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E30-8s51os.woff2"
+    },
+    {
+      "name": "barlow-condensed-600-latin.woff2",
+      "family": "Barlow Condensed",
+      "weight": "600",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B4873z3bWuQ.woff2"
+    },
+    {
+      "name": "barlow-400-latin.woff2",
+      "family": "Barlow",
+      "weight": "400",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHpv4kjgoGqM7E_DMs5.woff2"
+    },
+    {
+      "name": "barlow-condensed-500-latin.woff2",
+      "family": "Barlow Condensed",
+      "weight": "500",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B4-Lwz3bWuQ.woff2"
+    },
+    {
+      "name": "barlow-condensed-800-latin.woff2",
+      "family": "Barlow Condensed",
+      "weight": "800",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B47b1z3bWuQ.woff2"
+    },
+    {
+      "name": "barlow-condensed-700-latin.woff2",
+      "family": "Barlow Condensed",
+      "weight": "700",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTxwL3I-JCGChYJ8VI-L6OO_au7B46r2z3bWuQ.woff2"
+    },
+    {
+      "name": "barlow-800-latin.woff2",
+      "family": "Barlow",
+      "weight": "800",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3q-0s51os.woff2"
+    },
+    {
+      "name": "barlow-500-latin.woff2",
+      "family": "Barlow",
+      "weight": "500",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3_-gs51os.woff2"
+    }
+  ]
+}
