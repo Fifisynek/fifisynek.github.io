@@ -10958,5 +10958,255 @@
     "name": "Desert Eagle | Sunset Storm 弐",
     "file": "assets/skins/desert-eagle-sunset-storm-ni.png",
     "url": "https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL1m5fn8Sdk7v-Re6FsM-ScHGqv0uZ5uu5WQyC0nQlp4DiDyov6JH7FZgAmX5N5F-RZ5hntw9HlNuPkswLa2d1NzCv63S0cvTErvbieIVxaew/256fx192f"
+  },
+  {
+    "name": "The Dust Collection",
+    "file": "assets/collections/collection-set-dust.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_dust_png.png"
+  },
+  {
+    "name": "The Aztec Collection",
+    "file": "assets/collections/collection-set-aztec.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_aztec_png.png"
+  },
+  {
+    "name": "The Vertigo Collection",
+    "file": "assets/collections/collection-set-vertigo.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_vertigo_png.png"
+  },
+  {
+    "name": "The Inferno Collection",
+    "file": "assets/collections/collection-set-inferno.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_inferno_png.png"
+  },
+  {
+    "name": "The Militia Collection",
+    "file": "assets/collections/collection-set-militia.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_militia_png.png"
+  },
+  {
+    "name": "The Nuke Collection",
+    "file": "assets/collections/collection-set-nuke.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_nuke_png.png"
+  },
+  {
+    "name": "The Office Collection",
+    "file": "assets/collections/collection-set-office.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_office_png.png"
+  },
+  {
+    "name": "The Assault Collection",
+    "file": "assets/collections/collection-set-assault.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_assault_png.png"
+  },
+  {
+    "name": "The Alpha Collection",
+    "file": "assets/collections/collection-set-bravo-ii.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_bravo_ii_png.png"
+  },
+  {
+    "name": "The Dust 2 Collection",
+    "file": "assets/collections/collection-set-dust-2.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_dust_2_png.png"
+  },
+  {
+    "name": "The Train Collection",
+    "file": "assets/collections/collection-set-train.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_train_png.png"
+  },
+  {
+    "name": "The Mirage Collection",
+    "file": "assets/collections/collection-set-mirage.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_mirage_png.png"
+  },
+  {
+    "name": "The Italy Collection",
+    "file": "assets/collections/collection-set-italy.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_italy_png.png"
+  },
+  {
+    "name": "The Lake Collection",
+    "file": "assets/collections/collection-set-lake.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_lake_png.png"
+  },
+  {
+    "name": "The Safehouse Collection",
+    "file": "assets/collections/collection-set-safehouse.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_safehouse_png.png"
+  },
+  {
+    "name": "The Bank Collection",
+    "file": "assets/collections/collection-set-bank.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_bank_png.png"
+  },
+  {
+    "name": "The Overpass Collection",
+    "file": "assets/collections/collection-set-overpass.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_overpass.3b85a46ee2d4424367831a3f5994bf59f19f08bd.png"
+  },
+  {
+    "name": "The Cobblestone Collection",
+    "file": "assets/collections/collection-set-cobblestone.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_cobblestone.7f470f4ad76920182d29cafc4a7fcbbb5de0e3ec.png"
+  },
+  {
+    "name": "The Baggage Collection",
+    "file": "assets/collections/collection-set-baggage.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_baggage_png.png"
+  },
+  {
+    "name": "The Cache Collection",
+    "file": "assets/collections/collection-set-cache.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_cache.1bdc24f9fbd7532a2eb3e26d6ac33e52fc4a0efc.png"
+  },
+  {
+    "name": "The Gods and Monsters Collection",
+    "file": "assets/collections/collection-set-gods-and-monsters.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_gods_and_monsters.c66f30b18e90e05e6a727c5cda23912ffe49ffaf.png"
+  },
+  {
+    "name": "The Chop Shop Collection",
+    "file": "assets/collections/collection-set-chopshop.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_chopshop.b6ed206d7164f48594212559a70312123a12f9b5.png"
+  },
+  {
+    "name": "The Rising Sun Collection",
+    "file": "assets/collections/collection-set-kimono.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_kimono.eec9d131eed8efec7910f137cf0cadb710e576c8.png"
+  },
+  {
+    "name": "The 2018 Nuke Collection",
+    "file": "assets/collections/collection-set-nuke-2.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_nuke_2_png.png"
+  },
+  {
+    "name": "The 2018 Inferno Collection",
+    "file": "assets/collections/collection-set-inferno-2.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_inferno_2_png.png"
+  },
+  {
+    "name": "The X-Ray Collection",
+    "file": "assets/collections/collection-set-xraymachine.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_xraymachine_png.png"
+  },
+  {
+    "name": "The Blacksite Collection",
+    "file": "assets/collections/collection-set-blacksite.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_blacksite_png.png"
+  },
+  {
+    "name": "The St. Marc Collection",
+    "file": "assets/collections/collection-set-stmarc.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_stmarc.00c570e3e140452c95e68bfa4868c9ce1c5dc1c4.png"
+  },
+  {
+    "name": "The Canals Collection",
+    "file": "assets/collections/collection-set-canals.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_canals.56ae4549ece13ec63d017e7fa24dc0283572670f.png"
+  },
+  {
+    "name": "The Norse Collection",
+    "file": "assets/collections/collection-set-norse.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_norse.d91172d71b95efb4e334d194cf6b0a5ab9621e8c.png"
+  },
+  {
+    "name": "The 2021 Dust 2 Collection",
+    "file": "assets/collections/collection-set-dust-2-2021.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_dust_2_2021.318944ebb9e3dae51cd87d38b5d3584a2fa9425f.png"
+  },
+  {
+    "name": "The 2021 Mirage Collection",
+    "file": "assets/collections/collection-set-mirage-2021.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_mirage_2021.f1c9b5169b9fb9d6e0933baba0514dd34d6c9e19.png"
+  },
+  {
+    "name": "The Control Collection",
+    "file": "assets/collections/collection-set-op10-ct.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_op10_ct.aaf2dd57a339a610de6f4514a76eb1e846647cc0.png"
+  },
+  {
+    "name": "The Havoc Collection",
+    "file": "assets/collections/collection-set-op10-t.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_op10_t.18b6dd49906d15a5f44f1477ca6139c7ab491197.png"
+  },
+  {
+    "name": "The Ancient Collection",
+    "file": "assets/collections/collection-set-op10-ancient.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_op10_ancient.e90a2018381216be882d96c9e6c314d99f5097fa.png"
+  },
+  {
+    "name": "The 2021 Train Collection",
+    "file": "assets/collections/collection-set-train-2021.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_train_2021.a000b6d4ae1978aeced8ec31aa8ef5a0014dae29.png"
+  },
+  {
+    "name": "The 2021 Vertigo Collection",
+    "file": "assets/collections/collection-set-vertigo-2021.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_vertigo_2021.611413bf4d18e0c888054707dff98c612049f097.png"
+  },
+  {
+    "name": "The Anubis Collection",
+    "file": "assets/collections/collection-set-anubis.png",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_anubis_png.png"
+  },
+  {
+    "name": "The Arabesque Collection",
+    "file": "assets/collections/collection-set-arabesque.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_arabesque.3d2ee80f107ddabe862843e7b8097b1fdc98a917.png"
+  },
+  {
+    "name": "The Spy Tech Collection",
+    "file": "assets/collections/collection-set-spy-tech.png",
+    "url": "https://cdn.steamstatic.com/apps/730/icons/econ/set_icons/set_spy_tech.441f3fa962400c425c38ece97953d4322afe1706.png"
+  },
+  {
+    "name": "The Graphic Design Collection",
+    "file": "assets/collections/collection-set-graphic-design.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_graphic_design.svg"
+  },
+  {
+    "name": "The Overpass 2024 Collection",
+    "file": "assets/collections/collection-set-overpass-2024.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_overpass_2024.svg"
+  },
+  {
+    "name": "The Sport & Field Collection",
+    "file": "assets/collections/collection-set-realism-camo.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_realism_camo.svg"
+  },
+  {
+    "name": "The Achroma Collection",
+    "file": "assets/collections/collection-set-timed-drops-achroma.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_timed_drops_achroma.svg"
+  },
+  {
+    "name": "The Ascent Collection",
+    "file": "assets/collections/collection-set-timed-drops-cool.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_timed_drops_cool.svg"
+  },
+  {
+    "name": "The Harlequin Collection",
+    "file": "assets/collections/collection-set-timed-drops-exuberant.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_timed_drops_exuberant.svg"
+  },
+  {
+    "name": "The Boreal Collection",
+    "file": "assets/collections/collection-set-timed-drops-neutral.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_timed_drops_neutral.svg"
+  },
+  {
+    "name": "The Radiant Collection",
+    "file": "assets/collections/collection-set-timed-drops-warm.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_timed_drops_warm.svg"
+  },
+  {
+    "name": "The Train 2025 Collection",
+    "file": "assets/collections/collection-set-train-2025.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_train_2025.svg"
+  },
+  {
+    "name": "Limited Edition Item",
+    "file": "assets/collections/collection-set-xpshop-wpn-01.svg",
+    "url": "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/set_icons/set_xpshop_wpn_01.svg"
   }
 ]
