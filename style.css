@@ -3655,6 +3655,9 @@ dialog::backdrop {
 .upgrade-picker .section-head h2 small { font-size: 9px; margin-left: 7px; }
 .upgrade-picker .section-subtitle { font-size: 10px; }
 .upgrade-picker > .search-field { display: block; margin-bottom: 14px; }
+.upgrade-input-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.upgrade-input-filters > .search-field { flex: 1 1 180px; min-width: 0; }
+.upgrade-input-filters > .filter-select { flex: 0 1 auto; font-size: 10px; min-width: 135px; }
 .upgrade-target-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .upgrade-target-filters > .search-field { flex-basis: 100%; }
 .upgrade-target-filters > .filter-select { flex: 1; min-width: 0; font-size: 9px; padding-right: 17px; }

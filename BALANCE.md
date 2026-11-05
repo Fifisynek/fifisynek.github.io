@@ -48,6 +48,8 @@ Upgrader zapisuje odkrycia, ale **nie przyznaje XP** i nie zwiększa liczników 
 
 Otwarcie 1/2/3/5 skrzynek jest jedną transakcją. Najpierw sprawdzane są wszystkie zasoby i miejsce na wszystkie wyniki, dopiero potem losowane niezależne dropy i zapisywana cała zmiana. Brak jednego klucza nie zużywa pozostałych. Pominięcie animacji nie zmienia nagród.
 
+Każda transakcja sprawdza integralność wspólnego zapisu przed użyciem jego środków. Cały stan ma sumę kontrolną i zweryfikowaną kopię; podmiana pojedynczego pola nie przechodzi do ekonomii. Podczas pierwszej migracji wcześniejszego, niechronionego zapisu saldo można odtworzyć z kwoty początkowej oraz poprawnych, nieprzepełnionych liczników wpływów i wydatków. Kontrola po stronie klienta utrudnia proste edycje pamięci, ale nie gwarantuje ochrony przed osobą modyfikującą kod i wszystkie dane lokalne. Pełny antycheat wymaga serwera.
+
 Otwarcie kosztujące co najmniej $2,49 daje 25 XP i 10 XP za nowe odkrycie. Dla tańszych skrzynek stosuje się:
 
 ```

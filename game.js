@@ -2,13 +2,15 @@
 (function (root, factory) {
   "use strict";
   const catalog = typeof module === "object" && module.exports ? require("./catalog.js") : root.CaseCatalog;
-  const api = factory(catalog);
+  const saveGuard = typeof module === "object" && module.exports ? require("./save-guard.js") : root.SaveGuard;
+  const api = factory(catalog, saveGuard);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.CaseGame = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, saveGuard) {
   "use strict";
 
   const STORAGE_KEY = "case-lab-save-v1";
+  const STORAGE_BACKUP_KEY = STORAGE_KEY + ":verified-backup";
   const START_BALANCE = 10000;
   const SALE_FEE = 0.10;
   const DAILY_REWARD = 250;
@@ -39,6 +41,7 @@
   ];
 
   if (!catalog || !Array.isArray(catalog.CASES)) throw new Error("Najpierw załaduj katalog skrzynek (catalog.js).");
+  if (!saveGuard || typeof saveGuard.createGuard !== "function") throw new Error("Najpierw załaduj ochronę zapisu (save-guard.js).");
   const CASES = clone(catalog.CASES);
 
   const palettes = {
@@ -216,6 +219,7 @@
       try { storage = typeof localStorage !== "undefined" ? localStorage : null; }
       catch (_) { storage = null; }
     }
+    const guard = saveGuard.createGuard(storage, STORAGE_KEY);
 
     function validItem(raw, seen, migrating = false) {
       if (!raw || typeof raw !== "object" || typeof raw.id !== "string" || raw.id.length < 1 || raw.id.length > 100 || seen.has(raw.id)) return null;
@@ -243,6 +247,7 @@
       const migrating = raw.version === 1;
       const expanded = raw.version < 3;
       let repaired = false;
+      let walletRepaired = false;
       for (const field of ["balance"]) {
         if (integer(raw[field])) next[field] = raw[field]; else repaired = true;
       }
@@ -329,38 +334,55 @@
             targetSkinId: source.id, wearCode: record.wearCode, createdAt: record.createdAt };
         } else repaired = true;
       }
-      if (repaired) next.storageWarning = "Naprawiono uszkodzone dane zapisu. Poprawne przedmioty i postęp zostały zachowane.";
+      // Every legitimate credit (including sales) and debit has been recorded in
+      // these counters since v1. Repair edits made before integrity was installed.
+      // Saturated or damaged counters cannot reliably reconstruct historic cash.
+      if (raw.stats && integer(raw.stats.earned) && integer(raw.stats.spent) &&
+          raw.stats.earned < MAX_MONEY && raw.stats.spent < MAX_MONEY) {
+        const accountedBalance = Math.max(0, Math.min(MAX_MONEY, START_BALANCE + raw.stats.earned - raw.stats.spent));
+        if (next.balance !== accountedBalance) {
+          next.balance = accountedBalance;
+          walletRepaired = true;
+        }
+      }
+      if (walletRepaired) next.storageWarning = "Saldo nie zgadzało się z historią zarobków i wydatków. Przywrócono poprawną kwotę; ekwipunek i postęp zostały zachowane.";
+      else if (repaired) next.storageWarning = "Naprawiono uszkodzone dane zapisu. Poprawne przedmioty i postęp zostały zachowane.";
       else if (migrating) next.storageWarning = "Zapis zaktualizowano: zachowano środki i ekwipunek, wyceny dopasowano do nowego rynku. Album odzyskał skiny z ekwipunku i najlepszy historyczny drop; sprzedanych wcześniej skinów nie da się odtworzyć.";
       return next;
     }
 
-    if (storage && typeof storage.getItem === "function") {
+    const recoveryWarning = "Wykryto zmieniony lub uszkodzony zapis. Przywrócono ostatni poprawny stan; saldo, ekwipunek i postęp są zachowane.";
+    const initialRead = guard.read();
+    let sealOnStartup = false;
+    lastPayload = initialRead.payload;
+    if (initialRead.kind === "valid" || initialRead.kind === "legacy") {
       try {
-        const saved = storage.getItem(STORAGE_KEY);
-        lastPayload = saved == null ? null : saved;
-        if (saved != null) state = restore(JSON.parse(saved));
+        state = restore(initialRead.raw);
+        sealOnStartup = initialRead.kind === "legacy" || initialRead.recovered;
+        if (initialRead.recovered) state.storageWarning = recoveryWarning;
+        else if (initialRead.error) state.storageWarning = initialRead.error;
       } catch (_) {
-        state = initialState();
         state.storageWarning = "Nie udało się odczytać zapisu. Gra działa z nowym stanem; kolejny ruch utworzy nowy zapis.";
       }
+    } else if (initialRead.kind === "empty") {
+      // Protect a fresh account immediately, before its first purchase or click.
+      sealOnStartup = true;
     } else {
-      state.storageWarning = "Zapis lokalny jest niedostępny. Postęp pozostanie tylko do zamknięcia tej strony.";
+      state.storageWarning = initialRead.kind === "invalid" ?
+        "Zapis został zmieniony lub uszkodzony i nie ma poprawnej kopii zapasowej. Zachowano pliki zapisu; bieżąca gra rozpoczyna się od nowa." :
+        "Zapis lokalny jest niedostępny. Postęp pozostanie tylko do zamknięcia tej strony.";
     }
 
-    function save() {
-      if (!storage || typeof storage.setItem !== "function") {
-        state.storageWarning = "Zapis lokalny jest niedostępny. Postęp pozostanie tylko do zamknięcia tej strony.";
-        return;
+    function save(preserveWarning = false) {
+      const previousWarning = preserveWarning ? state.storageWarning : null;
+      const result = guard.write(state);
+      if (result.ok) {
+        lastPayload = result.payload;
+        state.storageWarning = previousWarning || (result.backupOk ? null : result.error);
+      } else {
+        state.storageWarning = result.error || "Nie udało się zapisać postępu. Zachowaj tę kartę otwartą.";
       }
-      try {
-        const payload = { ...state, storageWarning: null };
-        const serialized = JSON.stringify(payload);
-        storage.setItem(STORAGE_KEY, serialized);
-        lastPayload = serialized;
-        state.storageWarning = null;
-      } catch (_) {
-        state.storageWarning = "Nie udało się zapisać postępu (pamięć przeglądarki może być pełna). Zachowaj tę kartę otwartą.";
-      }
+      return result;
     }
     function notify() {
       for (const listener of listeners) {
@@ -369,36 +391,31 @@
     }
     function fail(error) { return { ok: false, error }; }
     function syncStorage() {
-      if (!storage || typeof storage.getItem !== "function") {
-        const warning = "Zapis lokalny jest niedostępny. Postęp pozostanie tylko do zamknięcia tej strony.";
-        const changed = state.storageWarning !== warning;
-        state.storageWarning = warning;
-        return { ok: false, changed, error: warning };
-      }
-      let saved;
-      try {
-        saved = storage.getItem(STORAGE_KEY);
-        if (saved == null) saved = null;
-      } catch (_) {
-        const warning = "Nie udało się odczytać zapisu. Zachowano bieżący postęp w tej karcie.";
-        const changed = state.storageWarning !== warning;
-        state.storageWarning = warning;
-        return { ok: false, changed, error: warning };
-      }
-      // An unchanged older payload must not roll back progress after a failed write.
-      if (saved === lastPayload) return { ok: true, changed: false };
-      lastPayload = saved;
       const previous = JSON.stringify(state);
-      try {
-        state = saved === null ? initialState() : restore(JSON.parse(saved));
+      const observed = guard.read();
+      const accepted = observed.kind === "valid" || observed.kind === "legacy";
+      if (accepted) {
+        // Retain unsaved in-memory progress when a full disk still contains the
+        // previous payload. A repeated invalid blob is never an accepted read.
+        if (observed.payload !== lastPayload) {
+          try { state = restore(observed.raw); lastPayload = observed.payload; }
+          catch (_) {
+            state.storageWarning = "Nie udało się odczytać zmienionego zapisu. Zachowano bieżący postęp w tej karcie.";
+            return { ok: false, changed: JSON.stringify(state) !== previous, error: state.storageWarning };
+          }
+        }
+        if (observed.recovered) {
+          state.storageWarning = recoveryWarning;
+          return { ok: false, changed: JSON.stringify(state) !== previous, error: recoveryWarning };
+        }
+        if (observed.error) state.storageWarning = observed.error;
         return { ok: true, changed: JSON.stringify(state) !== previous };
-      } catch (_) {
-        // Another tab or extension may damage storage; retain this tab's valid state.
-        const warning = "Nie udało się odczytać zmienionego zapisu. Zachowano bieżący postęp w tej karcie; kolejny ruch naprawi zapis.";
-        const changed = state.storageWarning !== warning;
-        state.storageWarning = warning;
-        return { ok: false, changed, error: warning };
       }
+      if (observed.kind === "empty") return { ok: true, changed: false };
+      // Missing, stripped or corrupt protected data cannot replace live state.
+      state.storageWarning = observed.kind === "invalid" ? recoveryWarning :
+        "Nie udało się odczytać zapisu. Zachowano bieżący postęp w tej karcie.";
+      return { ok: false, changed: JSON.stringify(state) !== previous, error: state.storageWarning };
     }
     function refresh() {
       if (writing) return fail("Poczekaj na zakończenie poprzedniej operacji.");
@@ -762,6 +779,8 @@
       });
     }
 
+    if (sealOnStartup) save(true);
+
     return Object.freeze({
       getState: () => clone(state),
       refresh,
@@ -787,6 +806,6 @@
     });
   }
 
-  return Object.freeze({ CASES, SKINS, RARITIES, WEARS, STORAGE_KEY, START_BALANCE, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, MAX_INVENTORY,
+  return Object.freeze({ CASES, SKINS, RARITIES, WEARS, STORAGE_KEY, STORAGE_BACKUP_KEY, START_BALANCE, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, MAX_INVENTORY,
     OPEN_XP, DISCOVERY_XP, MISSIONS, OPEN_QUANTITIES, UPGRADE_HOUSE_EDGE, UPGRADE_MAX_CHANCE, getDropChances, getRarityChances, getOpeningXP, createGame });
 });

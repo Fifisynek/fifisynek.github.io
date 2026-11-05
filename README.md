@@ -46,6 +46,8 @@ Każdy skin ma właściwy zakres float i dozwolone stany: **Factory New, Minimal
 
 Wybierz **od 1 do 5 niezablokowanych skinów**, następnie docelowy skin i jego dostępny stan. Panel przed próbą pokazuje wartość wkładu, wartość celu i szansę powodzenia.
 
+Obie listy mają sortowanie **od najtańszych lub od najdroższych**. Wkład można też sortować od najnowszych. Kolejność obowiązuje we wszystkich stronach wyników i zachowuje zaznaczone skiny.
+
 - Cel musi być wart co najmniej **105% sumy wkładu**.
 - Szansa wynosi `min(75%, wartość wkładu / wartość celu × 90%)`.
 - Wkład $10 i cel $20 dają **45% szansy**.
@@ -88,12 +90,19 @@ Otwarcia i upgrader mają ujemną wartość oczekiwaną. Pojedynczy drogi drop m
 
 Gotówka, klucze, skrzynki, skiny, albumy, ulubione, kariera, statystyki i ostatni wynik upgradera zapisują się automatycznie w `localStorage`. Stare zapisy wersji 1 i 2 są wykrywane automatycznie. **Wersja 2 zachowuje ceny i identyfikatory posiadanych egzemplarzy, zasoby, XP i odebrane nagrody**. Wersja 1 otrzymuje ceny nowej ekonomii i odzyskuje odkrycia z zachowanych przedmiotów.
 
+Zapis jest teraz sprawdzany za pomocą sumy kontrolnej całego stanu, a drugi klucz przechowuje zweryfikowaną kopię. Ochrona włącza się przy uruchomieniu gry, również przed pierwszym zakupem. Prosta podmiana `balance`, XP, ceny przedmiotu lub liczby kluczy powoduje odrzucenie zmienionych danych i odzyskanie ostatniego poprawnego zapisu. Kontrola działa podczas wczytywania, synchronizacji kart i przed każdą transakcją. Usunięcie samej sumy kontrolnej nie otwiera ponownie migracji starego zapisu, jeśli istnieje chroniona kopia.
+
+Przy pierwszej aktualizacji niechronionego zapisu gra sprawdza saldo względem `$100 + łączne wpływy − łączne wydatki`, o ile historyczne liczniki są poprawne i nie osiągnęły limitu. Pozwala to naprawić wcześniej podmienioną kwotę bez usuwania ekwipunku i kariery. Nie jest to pełny audyt dawnych transakcji. Gdy obie kopie są uszkodzone i nie ma poprawnego stanu w otwartej karcie, gra wyświetla ostrzeżenie i rozpoczyna nową sesję; przy samym wczytaniu nie nadpisuje uszkodzonych kopii.
+
+**To lokalne wykrywanie prostych podmian i uszkodzeń, nie pełny system antycheat.** Suma kontrolna nie jest podpisem serwera ani tajnym kluczem. Osoba kontrolująca kod i wszystkie dane swojej przeglądarki może obejść zabezpieczenie. Pełna ochrona salda i rozgrywki wymaga zaufanego serwera, który przechowuje stan i wykonuje transakcje.
+
 Zapis należy do konkretnej przeglądarki i adresu. Plik otwierany dwuklikiem, `localhost` i `127.0.0.1` mogą mieć osobne zapisy. Usunięcie danych witryny, tryb prywatny lub reset mogą usunąć postęp. Gra informuje o niedostępnym zapisie. Nie ma konta ani synchronizacji z serwerem.
 
 ## Pliki i testy
 
 - `index.html`, `style.css`, `script.js` — interfejs, responsywność, dźwięki i animacje.
 - `game.js` — stan, ekonomia, losowanie, otwarcia zbiorcze, upgrader i kariera.
+- `save-guard.js` — kontrola integralności, wersje zapisu i odzyskiwanie zweryfikowanej kopii.
 - `catalog.js` — skrzynki, skiny, ceny stanów i jawne tabele dropów.
 - `career-view.js`, `opening-view.js`, `inventory-view.js`, `upgrader-view.js` — widoki kariery, otwierania, ekwipunku i upgradera.
 - `image-map.js`, `assets/` — lokalne grafiki, fonty i migawka cen.
@@ -110,5 +119,7 @@ node --test tests/*.test.cjs
 Testy sprawdzają pełne pule 42 oficjalnych skrzynek względem niezależnej migawki manifestu, granice losowania customów, zakresy zużycia, ceny, zbiorcze otwarcia, upgrader, migracje, dwie karty, ograniczenia XP i pełne przejście kampanii. Nie potrzeba menedżera pakietów ani etapu budowania aplikacji.
 
 Testy kontrolera wykonują rzeczywiste zdarzenia zakupów, otwierania, filtrów i upgradera w środowisku Node z zastąpionymi animacjami. Weryfikują powiązanie widoków z zapisem gry; nie zastępują sprawdzenia wyglądu i płynności w przeglądarce.
+
+Testy ochrony zapisu wykonują również podmianę salda w formie komendy z konsoli, przeładowanie, odczyt przed zakupem, zmiany innych pól, odzyskiwanie kopii, brak miejsca na zapis i zgodność z wieloma kartami. Sortowanie upgradera jest sprawdzane razem z paginacją.
 
 Projekt fanowski, niezwiązany z Valve. CS2, Steam, nazwy i grafiki przedmiotów należą do ich właścicieli.

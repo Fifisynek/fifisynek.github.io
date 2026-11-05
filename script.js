@@ -41,7 +41,7 @@
   let spinAnimation;
   let openingCount = 1, poolPage = 1, poolRarity = 'all', poolWear = 'all', poolQuery = '';
   let lastBatch = null;
-  const upgradeOptions = {ids:[],target:null,wear:'MW',query:'',rarity:'all',page:1,inputQuery:'',inputPage:1};
+  const upgradeOptions = {ids:[],target:null,wear:'MW',query:'',rarity:'all',page:1,inputQuery:'',inputPage:1,inputSort:'newest',targetSort:'value_asc'};
   let sessionEarnings = 0;
   let sessionWorks = 0;
   let resultItem = null;
@@ -516,6 +516,8 @@
     if(event.target.id==='pool-wear'){poolWear=event.target.value;poolPage=1;preserveInput(()=>renderOpener(route.split('/')[1]));}
     if(event.target.id==='upgrade-wear'){upgradeOptions.wear=event.target.value;upgradeOptions.page=1;renderUpgrader();}
     if(event.target.id==='upgrade-rarity'){upgradeOptions.rarity=event.target.value;upgradeOptions.page=1;renderUpgrader();}
+    if(event.target.id==='upgrade-input-sort'){upgradeOptions.inputSort=event.target.value;upgradeOptions.inputPage=1;renderUpgrader();}
+    if(event.target.id==='upgrade-target-sort'){upgradeOptions.targetSort=event.target.value;upgradeOptions.page=1;renderUpgrader();}
     if(event.target.id==='case-origin'){catalogOrigin=event.target.value;catalogPage=1;renderCatalogGrid();}
     if(event.target.id==='shop-origin'){shopOrigin=event.target.value;renderShopGrid();}
     if(event.target.id==='wear-filter'){inventoryFilter.wear=event.target.value;inventoryFilter.page=1;renderInventoryGrid();}
