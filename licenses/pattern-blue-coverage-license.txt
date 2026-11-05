@@ -1,0 +1,73 @@
+MIT License
+
+Copyright (c) 2026 CSFloat Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+--- Normalized comparison dataset ---
+
+MIT License
+
+Copyright (c) 2026 Artem Kiziloff
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+# NOTICE
+
+The **Case Hardened coverage dataset** in `data/case-hardened.json` is a
+normalised derivative of the Blue Gem pattern dataset published under MIT
+license as part of the CSFloat Market Checker browser extension
+(<https://github.com/csfloat/extension>). The raw upstream schema was
+restructured into the camel-case nested form documented in this repository.
+
+Upstream copyright notice, preserved per the terms of its MIT license:
+
+    MIT License
+    Copyright (c) 2017 Stepan Fedorko-Bartos
+
+Pattern IDs and per-seed colour statistics are objective facts about CS2
+item rendering and are not subject to copyright in their own right. The
+compilation and presentation in this repository are released under the MIT
+license — see LICENSE.
+
+Doppler phase paintIndex mappings (`data/doppler-phases.json`) are public
+CS2 game data widely documented across the trading community. They are
+included here for convenience.
+
+Weapon / paint name mappings (`data/weapons.json`) are public CS2 game
+data. They are included as a small convenience lookup — this repository
+does not attempt to be a complete CS2 item database.

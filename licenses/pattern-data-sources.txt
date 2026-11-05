@@ -1,0 +1,61 @@
+SKINLAB offline pattern tables
+
+{
+  "builtAt": "2026-11-05T19:12:06.267Z",
+  "fadeEntries": 34014,
+  "coverageEntries": 25004,
+  "verifiedCoverageEntries": 25004,
+  "coverageColumns": [
+    "playsideBlue",
+    "backsideBlue",
+    "playsidePurple",
+    "backsidePurple",
+    "playsideGold",
+    "backsideGold"
+  ],
+  "fadeMethod": "Community normalization of Valve paint-seed rotation into a finish-dependent 80–100% range; not an official Valve metric.",
+  "coverageMethod": "CSFloat community image-derived colour coverage; playside and backside remain separate. No invented Blue Gem tiers.",
+  "mappingNote": "Coverage uses raw numeric defIndex/paintIndex keys from CSFloat, matched to the catalog weapon IDs. The normalized repository weapon-name mapping is deliberately not used.",
+  "sources": {
+    "fade": {
+      "url": "https://raw.githubusercontent.com/chescos/csgo-fade-percentage-calculator/fd02dd14bb1d8d9ea39c15f5472a0745867369b2/generated/fade-percentages.json",
+      "sha256": "57e168ba765d5becfdd304d95d160c60b82103f329a46e861c4a06c3e1c8834a"
+    },
+    "amber": {
+      "url": "https://raw.githubusercontent.com/chescos/csgo-fade-percentage-calculator/fd02dd14bb1d8d9ea39c15f5472a0745867369b2/generated/amber-fade-percentages.json",
+      "sha256": "c414e7516a62259f98949038cafbacb2dbacde35f1108254d89e0049d49f6416"
+    },
+    "acid": {
+      "url": "https://raw.githubusercontent.com/chescos/csgo-fade-percentage-calculator/fd02dd14bb1d8d9ea39c15f5472a0745867369b2/generated/acid-fade-percentages.json",
+      "sha256": "4615840092c7cb20b551f68cbbd030c5b5ab3a2bbf9309fc1c200dd16aa6b045"
+    },
+    "coverage": {
+      "url": "https://raw.githubusercontent.com/csfloat/extension/daf021b2231cefd1a28646cfd8892bb8747c1c66/data/bluegem.json",
+      "sha256": "cef0a0522d134cac696f245c96699e9a5085ac3680d666d1ae5633c4f63e3ea2"
+    },
+    "normalized": {
+      "url": "https://raw.githubusercontent.com/kizilovv/cs2-pattern-data/3f0c7c85ffbaa2a240b2a0392fd9419c4f9d079e/data/case-hardened.json",
+      "sha256": "35f1b202649164956343b7342ef139b8ad4ffcdf2735ce0fd06c2faa4a2b77a5"
+    },
+    "phases": {
+      "url": "https://raw.githubusercontent.com/kizilovv/cs2-pattern-data/3f0c7c85ffbaa2a240b2a0392fd9419c4f9d079e/data/doppler-phases.json",
+      "sha256": "dd04df5f1a85774319129e29c93fceeaf46f40e65c46bdd95f72a3cadfc0f321"
+    },
+    "fadeLicense": {
+      "url": "https://raw.githubusercontent.com/chescos/csgo-fade-percentage-calculator/fd02dd14bb1d8d9ea39c15f5472a0745867369b2/LICENSE",
+      "sha256": "c21eabb60f9891b9a46142e12bb537d0c73151f24a670f0e56951c727cf7123b"
+    },
+    "coverageLicense": {
+      "url": "https://raw.githubusercontent.com/csfloat/extension/daf021b2231cefd1a28646cfd8892bb8747c1c66/LICENSE",
+      "sha256": "573f0aea1c3dc3100cce6c4fe5c3ee8d075d44b6318601de138088c35e6218d7"
+    },
+    "normalizedLicense": {
+      "url": "https://raw.githubusercontent.com/kizilovv/cs2-pattern-data/3f0c7c85ffbaa2a240b2a0392fd9419c4f9d079e/LICENSE",
+      "sha256": "23d7ece928bbd303f146d1bdf7818af35066f128b9afd0143fbf52f88b9f1cff"
+    },
+    "normalizedNotice": {
+      "url": "https://raw.githubusercontent.com/kizilovv/cs2-pattern-data/3f0c7c85ffbaa2a240b2a0392fd9419c4f9d079e/NOTICE.md",
+      "sha256": "9b85f40d3ba3496511e3fd8de665b34021597f50fb7012bf83a04d5565431be6"
+    }
+  }
+}
