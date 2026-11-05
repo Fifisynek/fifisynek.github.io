@@ -3,10 +3,11 @@
   "use strict";
   const catalog = typeof module === "object" && module.exports ? require("./catalog.js") : root.CaseCatalog;
   const saveGuard = typeof module === "object" && module.exports ? require("./save-guard.js") : root.SaveGuard;
-  const api = factory(catalog, saveGuard);
+  const patterns = typeof module === "object" && module.exports ? require("./patterns.js") : root.CasePatterns;
+  const api = factory(catalog, saveGuard, patterns);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.CaseGame = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, saveGuard) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (catalog, saveGuard, patterns) {
   "use strict";
 
   const STORAGE_KEY = "case-lab-save-v1";
@@ -21,6 +22,18 @@
   const OPEN_QUANTITIES = [1, 2, 3, 5];
   const UPGRADE_HOUSE_EDGE = 0.10;
   const UPGRADE_MAX_CHANCE = 0.75;
+  const HISTORY_LIMIT = 200;
+  const SHOWCASE_SLOTS = [
+    { id: "ak", label: "AK-47" }, { id: "m4", label: "M4A4 / M4A1-S" }, { id: "awp", label: "AWP" },
+    { id: "usp", label: "USP-S / P2000" }, { id: "glock", label: "Glock-18" }, { id: "deagle", label: "Desert Eagle" },
+    { id: "knife", label: "Nóż" }, { id: "gloves", label: "Rękawice" }, { id: "featured", label: "Twoja perełka" }
+  ];
+  const SHOWCASE_THEMES = ["carbon", "aurora", "ice", "gold"];
+  const WEEKLY_IDS = ["weekly-open", "weekly-visit", "weekly-discover", "weekly-variety"];
+  const PISTOL_FAMILIES = {
+    "USP-S": "usp", "P2000": "usp", "Glock-18": "glock", "Desert Eagle": "deagle", "P250": "p250",
+    "Five-SeveN": "five-seven", "Tec-9": "tec9", "CZ75-Auto": "cz75", "Dual Berettas": "dual", "R8 Revolver": "r8"
+  };
   const RARITIES = {
     consumer: { id: "consumer", label: "Consumer", color: "#b0bdcb", chance: 0, weight: 0, rank: -2 },
     industrial: { id: "industrial", label: "Industrial", color: "#7baecb", chance: 0, weight: 0, rank: -1 },
@@ -42,6 +55,7 @@
 
   if (!catalog || !Array.isArray(catalog.CASES)) throw new Error("Najpierw załaduj katalog skrzynek (catalog.js).");
   if (!saveGuard || typeof saveGuard.createGuard !== "function") throw new Error("Najpierw załaduj ochronę zapisu (save-guard.js).");
+  if (!patterns || typeof patterns.describe !== "function") throw new Error("Najpierw załaduj obsługę wzorów (patterns.js).");
   const CASES = clone(catalog.CASES);
 
   const palettes = {
@@ -57,8 +71,9 @@
     entry.caseId = caseId;
     entry.palette = (palettes[entry.rarity] || palettes.milspec).slice();
     entry.art = /Gloves|Wraps/.test(entry.weapon) ? "gloves" : /★/.test(entry.weapon) || entry.rarity === "rare" ? "knife" :
-      /AWP|SSG|SCAR|G3SG/.test(entry.weapon) ? "sniper" : /AK-|M4|AUG|SG |FAMAS/.test(entry.weapon) ? "rifle" :
-      /Nova|MAG|XM|Sawed/.test(entry.weapon) ? "shotgun" : /MAC|MP|PP-|P90/.test(entry.weapon) ? "smg" : "pistol";
+      /AWP|SSG|SCAR|G3SG/.test(entry.weapon) ? "sniper" : /AK-|M4|AUG|SG |FAMAS|Galil/.test(entry.weapon) ? "rifle" :
+      /Nova|MAG|XM|Sawed/.test(entry.weapon) ? "shotgun" : /MAC|MP|PP-|P90/.test(entry.weapon) ? "smg" :
+      /Negev|M249/.test(entry.weapon) ? "machinegun" : entry.weapon === "Zeus x27" ? "taser" : "pistol";
     return entry;
   }
   for (const raw of catalog.ALL_SKINS || []) {
@@ -122,6 +137,8 @@
   freezeDeep(OPEN_QUANTITIES);
   freezeDeep(RARITIES);
   freezeDeep(WEARS);
+  freezeDeep(SHOWCASE_SLOTS);
+  freezeDeep(SHOWCASE_THEMES);
 
   const MAX_LEVEL = 20;
   const OPEN_XP = 25;
@@ -161,12 +178,84 @@
     return new Set(Object.keys(discovered).filter(id => discovered[id] && skinIndex[id]).map(id => finishKey(skinIndex[id]))).size;
   }
   function levelThreshold(level) { return 100 * (level - 1) + 25 * (level - 1) * (level - 1); }
-  function itemPrice(source, wear, stattrak = false, variation = 1) {
-    const anchor = source.wearValues && integer(source.wearValues[wear.code]) && source.wearValues[wear.code] > 0 ?
-      source.wearValues[wear.code] : source.baseValue * wear.multiplier;
-    return Math.max(1, Math.round(anchor * variation * (stattrak ? 1.3 : 1)));
+  function canonicalSkin(source) { return canonicalIndex[source.sourceId || source.id] || source; }
+  function editionTable(source, edition) {
+    const canonical = canonicalSkin(source);
+    return edition === "regular" ? canonical.wearValues || source.wearValues : edition === "stattrak" ? canonical.stattrakValues || source.stattrakValues : canonical.souvenirValues || source.souvenirValues;
   }
-  function supportsStatTrak(source) { return source.stattrak !== false && source.art !== "gloves" && source.weapon !== "Zeus x27"; }
+  function supportsStatTrak(source) {
+    const flag = canonicalSkin(source).stattrak;
+    return typeof flag === "boolean" ? flag : source.art !== "gloves" && source.weapon !== "Zeus x27";
+  }
+  function supportsEdition(source, edition) {
+    if (edition === "regular") return true;
+    if (edition === "stattrak") return supportsStatTrak(source) && (!editionTable(source, edition) || Object.values(editionTable(source, edition)).some(value => integer(value) && value > 0));
+    return edition === "souvenir" && canonicalSkin(source).souvenir === true && Object.values(editionTable(source, edition) || {}).some(value => integer(value) && value > 0);
+  }
+  function supportsStoredEdition(source, edition) {
+    // Ownership does not disappear when a later market snapshot has no offers.
+    // New purchases/upgrades still require supportsEdition and a priced table.
+    return edition === "regular" || edition === "stattrak" && supportsStatTrak(source) ||
+      edition === "souvenir" && (canonicalSkin(source).manifestSouvenir === true || canonicalSkin(source).souvenir === true);
+  }
+  function getSkinPrice(skinId, wearCode, edition = "regular") {
+    const source = skinIndex[skinId];
+    if (!source || !["regular", "stattrak", "souvenir"].includes(edition) || !supportsEdition(source, edition)) return null;
+    const wear = availableWear(source, wearCode);
+    if (!wear) return null;
+    const canonical = canonicalSkin(source);
+    const table = editionTable(source, edition);
+    const listedValue = table && table[wear.code];
+    const actual = integer(listedValue) && listedValue > 0;
+    // Older catalog imports can lack edition prices. Such a fallback is always
+    // labelled estimated; current catalogs provide actual per-edition values.
+    const regularValue = canonical.wearValues && canonical.wearValues[wear.code] || source.baseValue * wear.multiplier;
+    const value = Math.max(1, Math.round(actual ? listedValue : regularValue * (edition === "stattrak" ? 1.3 : 1)));
+    const detail = canonical.priceDetails && canonical.priceDetails[edition] && canonical.priceDetails[edition][wear.code];
+    const estimated = !actual || !detail || detail.method === "estimated";
+    return {
+      value, edition, wearCode: wear.code, source: detail && detail.source || "Migawka symulatora",
+      method: detail && detail.method || (actual ? "legacy-snapshot" : "estimated"),
+      updatedAt: detail && Number.isFinite(detail.updatedAt) ? detail.updatedAt : null,
+      fetchedAt: detail && detail.fetchedAt || canonical.sourceFetchedAt || null,
+      quantity: detail && integer(detail.quantity) ? detail.quantity : null,
+      url: detail && typeof detail.url === "string" ? detail.url : null,
+      phase: source.phase || null, estimated, noOffers: detail ? detail.noOffers === true : null,
+      basis: detail && detail.basis || (estimated ? "Szacunek zapisany w katalogu; brak bezpośredniego notowania dla tego wariantu." : detail.method === "min_price" ? "Najniższa oferta w zapisanej migawce Skinport." : "Cena sugerowana przez Skinport; brak aktywnej oferty w migawce."),
+      patternPremium: null, appliedPatternPremium: 0
+    };
+  }
+  function itemPrice(source, wear, edition = "regular") {
+    const selectedEdition = typeof edition === "boolean" ? edition ? "stattrak" : "regular" : edition;
+    const price = getSkinPrice(source.id, wear.code, selectedEdition);
+    return price ? price.value : null;
+  }
+  function savedPriceMetadata(source, wear, edition, value, raw) {
+    const snapshot = raw && typeof raw === "object" && !Array.isArray(raw) && raw.value === value && raw.edition === edition && raw.wearCode === wear.code ? raw : null;
+    if (!snapshot) return { value, edition, wearCode: wear.code, source: "Zapis historyczny", method: "legacy-snapshot", updatedAt: null, fetchedAt: null,
+      quantity: null, url: null, phase: source.phase || null, estimated: true, noOffers: null,
+      basis: "Zachowana wycena przedmiotu ze starszego zapisu; bez odtwarzania nieznanego seeda.", patternPremium: null, appliedPatternPremium: 0 };
+    return {
+      value, edition, wearCode: wear.code,
+      source: typeof snapshot.source === "string" ? snapshot.source.slice(0, 200) : "Zapis historyczny",
+      method: typeof snapshot.method === "string" ? snapshot.method.slice(0, 80) : "legacy-snapshot",
+      updatedAt: integer(snapshot.updatedAt) ? snapshot.updatedAt : null,
+      fetchedAt: typeof snapshot.fetchedAt === "string" ? snapshot.fetchedAt.slice(0, 100) : null,
+      quantity: integer(snapshot.quantity) ? snapshot.quantity : null,
+      url: typeof snapshot.url === "string" && /^https?:\/\//.test(snapshot.url) ? snapshot.url.slice(0, 1000) : null,
+      phase: source.phase || null, estimated: snapshot.estimated !== false,
+      noOffers: typeof snapshot.noOffers === "boolean" ? snapshot.noOffers : null,
+      basis: typeof snapshot.basis === "string" ? snapshot.basis.slice(0, 600) : "Historyczna migawka wyceny przedmiotu.",
+      patternPremium: null, appliedPatternPremium: 0
+    };
+  }
+  function getPatternInfo(itemOrSkinId, seed) {
+    const reference = typeof itemOrSkinId === "string" ? skinIndex[itemOrSkinId] : itemOrSkinId;
+    if (!reference || typeof reference !== "object") return null;
+    const source = skinIndex[reference.skinId || reference.id] || reference;
+    const requested = typeof seed !== "undefined" ? seed : Object.hasOwn(reference, "paintSeed") ? reference.paintSeed : null;
+    return patterns.describe(source, requested);
+  }
   function availableWear(source, code) {
     const wear = WEARS.find(entry => entry.code === code);
     if (!wear || Boolean(source.noWear) !== (code === "NW")) return null;
@@ -187,13 +276,40 @@
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
   function emptyCounts() { return Object.fromEntries(CASES.map(box => [box.id, 0])); }
-  function initialState() {
+  function showcaseMatches(slotId, item) {
+    return slotId === "featured" || slotId === "ak" && item.weapon === "AK-47" ||
+      slotId === "m4" && ["M4A4", "M4A1-S"].includes(item.weapon) || slotId === "awp" && item.weapon === "AWP" ||
+      slotId === "usp" && ["USP-S", "P2000"].includes(item.weapon) || slotId === "glock" && item.weapon === "Glock-18" ||
+      slotId === "deagle" && item.weapon === "Desert Eagle" || slotId === "knife" && item.art === "knife" ||
+      slotId === "gloves" && item.art === "gloves";
+  }
+  function emptyShowcase() {
+    return { title: "Moja kolekcja", theme: "carbon", slots: Object.fromEntries(SHOWCASE_SLOTS.map(slot => [slot.id, null])), unlockedThemes: ["carbon"] };
+  }
+  function weekInfo(at) {
+    const start = new Date(at);
+    if (!Number.isFinite(start.getTime())) return weekInfo(Date.now());
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (start.getDay() + 6) % 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return { weekId: localDay(start.getTime()), startAt: start.getTime(), endsAt: end.getTime() };
+  }
+  function emptyWeek(at) {
+    return { ...weekInfo(at), opens: 0, caseIds: [], discoveries: [], pistols: [], wears: [], claimed: [] };
+  }
+  function emptyRecords(at) {
+    return { since: at, opens: 0, openingCost: 0, dropValue: 0, netDropValue: 0,
+      bestOpening: null, rarestDrop: null, bestFloat: null, bestUpgrade: null };
+  }
+  function initialState(at = 0) {
     return {
       version: 3, balance: START_BALANCE, cases: emptyCounts(), keys: emptyCounts(), inventory: [],
       settings: { sound: true, fast: false },
       stats: { spent: 0, earned: 0, opens: 0, sold: 0, bestDrop: null, workActions: 0, upgradeAttempts: 0, upgradeWins: 0, upgradeLostValue: 0, caseOpens: emptyCounts(), rarities: Object.fromEntries(Object.keys(RARITIES).map(id => [id, 0])) },
       progress: { xp: 0, discovered: {}, claimedMissions: [], claimedCollections: [], legacyAccess: [] },
-      dailyClaimed: null, lastWork: 0, workCombo: 0, lastUpgrade: null, storageWarning: null
+      dailyClaimed: null, lastWork: 0, workCombo: 0, lastUpgrade: null,
+      showcase: emptyShowcase(), weekly: emptyWeek(at), history: [], records: emptyRecords(at), storageWarning: null
     };
   }
 
@@ -201,7 +317,7 @@
     const clock = typeof options.now === "function" ? options.now : Date.now;
     const rng = typeof options.random === "function" ? options.random : Math.random;
     let storage = options.storage;
-    let state = initialState();
+    let state = initialState(now());
     let sequence = 0;
     let writing = false;
     let lastPayload = null;
@@ -229,21 +345,149 @@
       const wearFloat = source.noWear ? 0 : migrating ? Math.max(source.minFloat, Math.min(source.maxFloat, raw.float)) : raw.float;
       const wear = wearAt(source, wearFloat);
       if (!wear || !availableWear(source, wear.code) || wearFloat < source.minFloat || wearFloat > source.maxFloat || (!migrating && wear.code !== raw.wearCode)) return null;
-      const stattrak = Boolean(raw.stattrak) && supportsStatTrak(source);
+      const declaredEdition = Object.hasOwn(raw, "edition");
+      const edition = declaredEdition ? raw.edition : raw.stattrak && supportsStoredEdition(source, "stattrak") ? "stattrak" : raw.souvenir && supportsStoredEdition(source, "souvenir") ? "souvenir" : "regular";
+      if (!["regular", "stattrak", "souvenir"].includes(edition) || !supportsStoredEdition(source, edition)) return null;
+      const paintSeed = Object.hasOwn(raw, "paintSeed") ? raw.paintSeed : null;
+      if (paintSeed !== null && (!patterns.isValidSeed(paintSeed) || source.noWear)) return null;
+      if (Object.hasOwn(raw, "paintIndex") && raw.paintIndex !== (source.paintIndex ?? null)) return null;
+      const stattrak = edition === "stattrak";
+      const value = migrating ? itemPrice(source, wear, edition) ?? raw.value : raw.value;
       seen.add(raw.id);
       return {
         id: raw.id, skinId: source.id, weapon: source.weapon, name: source.name, rarity: source.rarity,
-        wear: wear.label, wearCode: wear.code, float: wearFloat, value: migrating ? itemPrice(source, wear, stattrak) : raw.value, caseId: source.caseId,
-        stattrak, locked: raw.locked === true, catalogId: source.sourceId || source.id,
+        wear: wear.label, wearCode: wear.code, float: wearFloat, value, caseId: source.caseId,
+        edition, stattrak, souvenir: edition === "souvenir", paintSeed, paintIndex: source.paintIndex ?? null, defIndex: source.defIndex ?? null,
+        patternFamily: patterns.family(source), priceMetadata: savedPriceMetadata(source, wear, edition, value, raw.priceMetadata),
+        locked: raw.locked === true, catalogId: source.sourceId || source.id,
         phase: source.phase || null, displayName: source.displayName || source.name, noWear: Boolean(source.noWear),
         createdAt: timestamp(raw.createdAt) ? raw.createdAt : 0,
         art: source.art, palette: source.palette.slice()
       };
     }
 
+    function validOpeningRecord(raw, chanceRequired = false) {
+      if (!raw || typeof raw !== "object" || !caseIndex[raw.caseId] || !timestamp(raw.at)) return null;
+      const item = validItem(raw.item, new Set());
+      if (!item || item.caseId !== raw.caseId) return null;
+      if (chanceRequired && (!Number.isFinite(raw.chance) || raw.chance <= 0 || raw.chance > 1)) return null;
+      return { item, caseId: raw.caseId, at: raw.at, ...(chanceRequired ? { chance: raw.chance } : {}) };
+    }
+    function validUpgradeRecord(raw, history = false) {
+      if (!raw || typeof raw !== "object" || !timestamp(raw.at) || !integer(raw.inputValue) || raw.inputValue < 1 ||
+          !integer(raw.targetValue) || raw.targetValue < 1 || !Number.isFinite(raw.chance) || raw.chance <= 0 || raw.chance > UPGRADE_MAX_CHANCE ||
+          !Number.isFinite(raw.multiplier) || raw.multiplier < 1.05 || Math.abs(raw.multiplier - raw.targetValue / raw.inputValue) > 1e-8) return null;
+      const won = history ? raw.won : true;
+      if (typeof won !== "boolean" || history && (!Number.isSafeInteger(raw.quantity) || raw.quantity < 1 || raw.quantity > 5)) return null;
+      const item = raw.item ? validItem(raw.item, new Set()) : null;
+      if (won ? !item || item.value !== raw.targetValue : Boolean(raw.item)) return null;
+      const targetSkinId = history ? raw.targetSkinId : item.skinId;
+      const wearCode = history ? raw.wearCode : item.wearCode;
+      const source = skinIndex[targetSkinId];
+      const edition = Object.hasOwn(raw, "edition") ? raw.edition : item && item.edition || "regular";
+      if (!source || !availableWear(source, wearCode) || !supportsStoredEdition(source, edition) || item && (finishKey(source) !== finishKey(item) || item.wearCode !== wearCode || item.edition !== edition)) return null;
+      return { item, at: raw.at, chance: raw.chance, multiplier: raw.multiplier, inputValue: raw.inputValue, targetValue: raw.targetValue,
+        edition, ...(history ? { won, targetSkinId, wearCode, quantity: raw.quantity } : {}) };
+    }
+    function restoreFeatures(raw, next, repair) {
+      if (Object.hasOwn(raw, "showcase")) {
+        const saved = raw.showcase;
+        if (!saved || typeof saved !== "object" || Array.isArray(saved)) repair();
+        else {
+          if (typeof saved.title === "string" && saved.title.trim() && Array.from(saved.title.trim()).length <= 40) next.showcase.title = saved.title.trim(); else repair();
+          if (Array.isArray(saved.unlockedThemes)) {
+            next.showcase.unlockedThemes = [...new Set(["carbon", ...saved.unlockedThemes.filter(theme => SHOWCASE_THEMES.includes(theme))])];
+            if (saved.unlockedThemes.some(theme => !SHOWCASE_THEMES.includes(theme))) repair();
+          } else repair();
+          if (SHOWCASE_THEMES.includes(saved.theme) && next.showcase.unlockedThemes.includes(saved.theme)) next.showcase.theme = saved.theme; else repair();
+          const used = new Set();
+          if (!saved.slots || typeof saved.slots !== "object" || Array.isArray(saved.slots)) repair();
+          else for (const slot of SHOWCASE_SLOTS) {
+            const id = saved.slots[slot.id];
+            if (id == null) continue;
+            const item = next.inventory.find(entry => entry.id === id);
+            if (typeof id === "string" && item && showcaseMatches(slot.id, item) && !used.has(id)) {
+              next.showcase.slots[slot.id] = id;
+              used.add(id);
+            } else repair();
+          }
+        }
+      }
+      if (Object.hasOwn(raw, "weekly")) {
+        const saved = raw.weekly;
+        const date = saved && typeof saved.weekId === "string" && /^\d{4}-\d{2}-\d{2}$/.test(saved.weekId) ? new Date(saved.weekId + "T00:00:00Z") : null;
+        const calendarTime = value => Number.isSafeInteger(value) && Math.abs(value) <= 8640000000000000;
+        if (!saved || !date || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== saved.weekId || date.getUTCDay() !== 1 ||
+            !calendarTime(saved.startAt) || !calendarTime(saved.endsAt) || saved.endsAt - saved.startAt < 6 * 86400000 || saved.endsAt - saved.startAt > 8 * 86400000 || !integer(saved.opens, MAX_COUNT)) repair();
+        else {
+          const week = { weekId: saved.weekId, startAt: saved.startAt, endsAt: saved.endsAt, opens: saved.opens, caseIds: [], discoveries: [], pistols: [], wears: [], claimed: [] };
+          for (const [field, allowed] of [["caseIds", Object.keys(caseIndex)], ["pistols", Object.values(PISTOL_FAMILIES)], ["wears", WEARS.filter(wear => wear.code !== "NW").map(wear => wear.code)], ["claimed", WEEKLY_IDS]]) {
+            if (!Array.isArray(saved[field])) { repair(); continue; }
+            week[field] = [...new Set(saved[field].filter(value => typeof value === "string" && allowed.includes(value)))];
+            if (week[field].length !== saved[field].length) repair();
+          }
+          if (Array.isArray(saved.discoveries)) {
+            const seen = new Set();
+            for (const id of saved.discoveries.slice(0, SKINS.length)) {
+              const source = skinIndex[id];
+              if (source && !seen.has(finishKey(source))) { week.discoveries.push(id); seen.add(finishKey(source)); }
+              else repair();
+            }
+            if (saved.discoveries.length > SKINS.length) repair();
+          } else repair();
+          for (const field of ["caseIds", "discoveries", "pistols", "wears"]) {
+            if (week[field].length > week.opens) { week[field] = week[field].slice(0, week.opens); repair(); }
+          }
+          next.weekly = week;
+        }
+      }
+      if (Object.hasOwn(raw, "history")) {
+        if (!Array.isArray(raw.history)) repair();
+        else {
+          const used = new Set();
+          for (const entry of raw.history.slice(0, HISTORY_LIMIT)) {
+            if (!entry || typeof entry.id !== "string" || !entry.id || entry.id.length > 200 || used.has(entry.id)) { repair(); continue; }
+            let valid = null;
+            if (entry.type === "opening" && integer(entry.cost) && entry.cost > 0) {
+              const record = validOpeningRecord(entry);
+              if (record) valid = { id: entry.id, type: "opening", ...record, cost: entry.cost };
+            } else if (entry.type === "upgrade") {
+              const record = validUpgradeRecord(entry, true);
+              if (record) valid = { id: entry.id, type: "upgrade", ...record };
+            }
+            if (valid) { next.history.push(valid); used.add(valid.id); } else repair();
+          }
+          if (raw.history.length > HISTORY_LIMIT) repair();
+        }
+      }
+      if (Object.hasOwn(raw, "records")) {
+        const saved = raw.records;
+        if (!saved || typeof saved !== "object" || Array.isArray(saved)) repair();
+        else {
+          if (timestamp(saved.since)) next.records.since = saved.since; else repair();
+          for (const field of ["opens", "openingCost", "dropValue", "netDropValue"]) {
+            if (integer(saved[field])) next.records[field] = saved[field]; else repair();
+          }
+          for (const field of ["bestOpening", "rarestDrop"]) {
+            if (saved[field] == null) continue;
+            const record = validOpeningRecord(saved[field], field === "rarestDrop");
+            if (record) next.records[field] = record; else repair();
+          }
+          if (saved.bestFloat != null) {
+            const item = validItem(saved.bestFloat.item, new Set());
+            if (item && !item.noWear && timestamp(saved.bestFloat.at)) next.records.bestFloat = { item, at: saved.bestFloat.at }; else repair();
+          }
+          if (saved.bestUpgrade != null) {
+            const record = validUpgradeRecord(saved.bestUpgrade);
+            if (record) next.records.bestUpgrade = record; else repair();
+          }
+        }
+      }
+    }
+
     function restore(raw) {
       if (!raw || typeof raw !== "object" || ![1, 2, 3].includes(raw.version)) throw new Error("Nieobsługiwana wersja zapisu.");
-      const next = initialState();
+      const next = initialState(now());
       const migrating = raw.version === 1;
       const expanded = raw.version < 3;
       let repaired = false;
@@ -326,14 +570,17 @@
         const record = raw.lastUpgrade;
         const source = skinIndex[record.targetSkinId];
         const item = record.item ? validItem(record.item, new Set()) : null;
+        const edition = Object.hasOwn(record, "edition") ? record.edition : item && item.edition || "regular";
         if (source && availableWear(source, record.wearCode) && typeof record.won === "boolean" &&
+            supportsStoredEdition(source, edition) &&
             Number.isFinite(record.chance) && record.chance > 0 && record.chance <= UPGRADE_MAX_CHANCE &&
             integer(record.inputValue) && record.inputValue > 0 && integer(record.targetValue) && record.targetValue > 0 &&
             timestamp(record.createdAt) && (record.won ? Boolean(item) : !record.item)) {
           next.lastUpgrade = { won: record.won, item, chance: record.chance, inputValue: record.inputValue, targetValue: record.targetValue,
-            targetSkinId: source.id, wearCode: record.wearCode, createdAt: record.createdAt };
+            targetSkinId: source.id, wearCode: record.wearCode, edition, createdAt: record.createdAt };
         } else repaired = true;
       }
+      restoreFeatures(raw, next, () => { repaired = true; });
       // Every legitimate credit (including sales) and debit has been recorded in
       // these counters since v1. Repair edits made before integrity was installed.
       // Saturated or damaged counters cannot reliably reconstruct historic cash.
@@ -432,7 +679,7 @@
         // Every mutation uses the latest shared save, including rejected purchases.
         synchronized = syncStorage();
         result = callback();
-        if (result.ok) save();
+        if (result.ok) { ensureCurrentWeek(); save(); }
       } finally { writing = false; }
       if (result.ok || synchronized.changed) notify();
       return result;
@@ -452,6 +699,143 @@
       if (fresh && xp > 0) addXP(xp);
       return fresh;
     }
+    function effectiveWeek(at = now()) {
+      const current = weekInfo(at);
+      return current.weekId > state.weekly.weekId ? emptyWeek(at) : state.weekly;
+    }
+    function ensureCurrentWeek(at = now()) {
+      const week = effectiveWeek(at);
+      if (week !== state.weekly) state.weekly = week;
+      return state.weekly;
+    }
+    function weeklyView(week) {
+      let hash = 2166136261;
+      for (const character of week.weekId) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619) >>> 0;
+      const ordinal = Math.floor(Date.parse(week.weekId + "T00:00:00Z") / (7 * 86400000));
+      const pistolWeek = (ordinal % 2 + 2) % 2 === 0;
+      const cosmetic = SHOWCASE_THEMES[1 + (ordinal % 3 + 3) % 3];
+      const definitions = [
+        { id: "weekly-open", title: "Cotygodniowy rytuał", description: "Otwórz skrzynki w tym tygodniu.", current: week.opens, target: 12 + hash % 7, caseId: "dnm", count: 1, xp: 30 },
+        { id: "weekly-visit", title: "Zmień scenerię", description: "Otwórz skrzynki z różnych kolekcji w tym tygodniu.", current: week.caseIds.length, target: 3 + (hash >>> 3) % 2, caseId: "revolution", count: 1, xp: 40 },
+        { id: "weekly-discover", title: "Nowe strony albumu", description: "Odkryj po raz pierwszy nowe warianty, otwierając skrzynki w tym tygodniu.", current: week.discoveries.length, target: 6 + (hash >>> 5) % 5, caseId: "budgetrun", count: 2, xp: 40 },
+        { id: "weekly-variety", title: pistolWeek ? "Pistoletowy arsenał" : "Trzy oblicza skina", description: pistolWeek ? "Wylosuj trzy różne rodziny pistoletów w skrzynkach w tym tygodniu." : "Wylosuj skiny w trzech różnych stanach zużycia w tym tygodniu.", current: pistolWeek ? week.pistols.length : week.wears.length, target: 3, caseId: "gallery", count: 1, xp: 60, cosmetic }
+      ];
+      const missions = definitions.map(definition => ({
+        id: definition.id, title: definition.title, description: definition.description,
+        current: Math.min(definition.current, definition.target), target: definition.target,
+        completed: definition.current >= definition.target, claimed: week.claimed.includes(definition.id),
+        reward: { cases: { [definition.caseId]: definition.count }, keys: { [definition.caseId]: definition.count }, xp: definition.xp, cosmetic: definition.cosmetic || null }
+      }));
+      return { weekId: week.weekId, startAt: week.startAt, endsAt: week.endsAt, missions,
+        claimedCount: missions.filter(mission => mission.claimed).length, total: missions.length };
+    }
+    function getWeekly() { return weeklyView(effectiveWeek()); }
+    function claimWeekly(id) {
+      return transaction(() => {
+        const week = effectiveWeek();
+        const mission = weeklyView(week).missions.find(entry => entry.id === id);
+        if (!mission) return fail("Nie znaleziono tego zadania tygodniowego.");
+        if (mission.claimed) return fail("Nagroda za to zadanie tygodniowe jest już odebrana.");
+        if (!mission.completed) return fail("To zadanie tygodniowe nie jest jeszcze ukończone.");
+        for (const group of ["cases", "keys"]) for (const [caseId, count] of Object.entries(mission.reward[group])) {
+          if (!caseIndex[caseId] || state[group][caseId] + count > MAX_COUNT) return fail("Brak miejsca na zasoby z nagrody. Zużyj kilka skrzynek lub kluczy.");
+        }
+        state.weekly = week;
+        for (const group of ["cases", "keys"]) for (const [caseId, count] of Object.entries(mission.reward[group])) state[group][caseId] += count;
+        addXP(mission.reward.xp);
+        if (mission.reward.cosmetic && !state.showcase.unlockedThemes.includes(mission.reward.cosmetic)) state.showcase.unlockedThemes.push(mission.reward.cosmetic);
+        state.weekly.claimed.push(mission.id);
+        return { ok: true, id: mission.id, weekId: week.weekId, reward: clone(mission.reward), xp: mission.reward.xp };
+      });
+    }
+    function isItemEquipped(id) { return typeof id === "string" && Object.values(state.showcase.slots).includes(id); }
+    function getShowcase() {
+      const slots = SHOWCASE_SLOTS.map(slot => {
+        const item = state.inventory.find(entry => entry.id === state.showcase.slots[slot.id]) || null;
+        return { ...slot, item: item ? clone(item) : null, itemId: item ? item.id : null };
+      });
+      return { title: state.showcase.title, theme: state.showcase.theme, slots, unlockedThemes: state.showcase.unlockedThemes.slice(),
+        totalValue: slots.reduce((sum, slot) => sum + (slot.item ? slot.item.value : 0), 0), filled: slots.filter(slot => slot.item).length, totalSlots: slots.length };
+    }
+    function getShowcaseCandidates(slotId) {
+      if (!SHOWCASE_SLOTS.some(slot => slot.id === slotId)) return [];
+      return clone(state.inventory.filter(item => showcaseMatches(slotId, item)).sort((left, right) => right.value - left.value));
+    }
+    function setShowcaseSlot(slotId, itemId) {
+      return transaction(() => {
+        if (!SHOWCASE_SLOTS.some(slot => slot.id === slotId)) return fail("Nie znaleziono tego miejsca w gablocie.");
+        if (itemId !== null && typeof itemId !== "string") return fail("Wybierz przedmiot lub opróżnij miejsce w gablocie.");
+        if (itemId !== null) {
+          const item = state.inventory.find(entry => entry.id === itemId);
+          if (!item) return fail("Ten skin nie znajduje się już w ekwipunku.");
+          if (!showcaseMatches(slotId, item)) return fail("Ten typ przedmiotu nie pasuje do wybranego miejsca w gablocie.");
+          for (const slot of SHOWCASE_SLOTS) if (state.showcase.slots[slot.id] === itemId) state.showcase.slots[slot.id] = null;
+        }
+        state.showcase.slots[slotId] = itemId;
+        return { ok: true, slotId, itemId };
+      });
+    }
+    function setShowcaseTitle(title) {
+      return transaction(() => {
+        if (typeof title !== "string" || !title.trim() || Array.from(title.trim()).length > 40) return fail("Nazwa gabloty powinna mieć od 1 do 40 znaków.");
+        state.showcase.title = title.trim();
+        return { ok: true, title: state.showcase.title };
+      });
+    }
+    function setShowcaseTheme(theme) {
+      return transaction(() => {
+        if (!SHOWCASE_THEMES.includes(theme)) return fail("Nie znaleziono tego motywu gabloty.");
+        if (!state.showcase.unlockedThemes.includes(theme)) return fail("Odblokuj ten motyw, wykonując zadania tygodniowe.");
+        state.showcase.theme = theme;
+        return { ok: true, theme };
+      });
+    }
+    function addHistory(entry) {
+      state.history.unshift(clone(entry));
+      if (state.history.length > HISTORY_LIMIT) state.history.length = HISTORY_LIMIT;
+    }
+    function recordFloat(item, at) {
+      if (item.noWear) return;
+      const previous = state.records.bestFloat;
+      if (!previous || item.float < previous.item.float || item.float === previous.item.float && item.value > previous.item.value) state.records.bestFloat = { item: clone(item), at };
+    }
+    function recordOpening(box, item, fresh) {
+      const at = item.createdAt;
+      const cost = box.price + box.keyPrice;
+      const records = state.records;
+      records.opens = Math.min(MAX_MONEY, records.opens + 1);
+      records.openingCost = Math.min(MAX_MONEY, records.openingCost + cost);
+      records.dropValue = Math.min(MAX_MONEY, records.dropValue + item.value);
+      records.netDropValue = Math.min(MAX_MONEY, records.netDropValue + saleValue(item.value));
+      if (!records.bestOpening || item.value > records.bestOpening.item.value) records.bestOpening = { item: clone(item), caseId: box.id, at };
+      const chance = dropTables[box.id].filter(row => row.skinId === item.skinId).reduce((sum, row) => sum + row.chance, 0);
+      if (!records.rarestDrop || chance < records.rarestDrop.chance || chance === records.rarestDrop.chance && item.value > records.rarestDrop.item.value) records.rarestDrop = { item: clone(item), caseId: box.id, chance, at };
+      recordFloat(item, at);
+      addHistory({ id: `opening-${item.id}`, type: "opening", at, caseId: box.id, item, cost });
+      const week = ensureCurrentWeek();
+      week.opens = Math.min(MAX_COUNT, week.opens + 1);
+      if (!week.caseIds.includes(box.id)) week.caseIds.push(box.id);
+      if (fresh) week.discoveries.push(item.skinId);
+      const family = PISTOL_FAMILIES[item.weapon];
+      if (family && !week.pistols.includes(family)) week.pistols.push(family);
+      if (item.wearCode !== "NW" && !week.wears.includes(item.wearCode)) week.wears.push(item.wearCode);
+    }
+    function recordUpgrade(quote, won, item) {
+      const at = now();
+      sequence += 1;
+      const id = `upgrade-${at.toString(36)}-${sequence.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      const record = { at, item: item ? clone(item) : null, won, chance: quote.chance, inputValue: quote.inputValue,
+        targetValue: quote.targetValue, multiplier: quote.multiplier, targetSkinId: quote.targetSkinId, wearCode: quote.wearCode, edition: quote.edition, quantity: quote.ids.length };
+      addHistory({ id, type: "upgrade", ...record });
+      if (!won) return;
+      recordFloat(item, at);
+      const previous = state.records.bestUpgrade;
+      if (!previous || quote.chance < previous.chance || quote.chance === previous.chance && item.value > previous.item.value) {
+        state.records.bestUpgrade = { item: clone(item), at, chance: quote.chance, multiplier: quote.multiplier, inputValue: quote.inputValue, targetValue: quote.targetValue, edition: quote.edition };
+      }
+    }
+    function getHistory() { return clone(state.history); }
+    function getRecords() { return { ...clone(state.records), balance: state.records.netDropValue - state.records.openingCost }; }
     function getProgress() {
       const xp = state.progress.xp;
       let level = 1;
@@ -581,14 +965,21 @@
       const rounded = Math.floor(value * 1000000) / 1000000;
       return Math.max(minimum, Math.min(maximum - Number.EPSILON, rounded));
     }
-    function itemFromSource(source, wearCode = null, exactValue = null) {
+    function itemFromSource(source, wearCode = null, exactValue = null, requestedEdition = null) {
       const requestedWear = wearCode ? availableWear(source, wearCode) : null;
       const wearFloat = source.noWear ? 0 : requestedWear ?
         randomFloat(Math.max(source.minFloat, requestedWear.min), Math.min(source.maxFloat, requestedWear.max, 1)) :
         randomFloat(source.minFloat, source.maxFloat);
       const wear = requestedWear || wearAt(source, wearFloat);
-      const stattrak = exactValue === null && supportsStatTrak(source) && random() < 0.1;
-      const value = exactValue === null ? itemPrice(source, wear, stattrak, 0.96 + random() * 0.08) : exactValue;
+      const stattrakRoll = requestedEdition === null && exactValue === null && supportsEdition(source, "stattrak") && random() < 0.1;
+      const edition = requestedEdition || (stattrakRoll ? "stattrak" : "regular");
+      const stattrak = edition === "stattrak";
+      const priceMetadata = getSkinPrice(source.id, wear.code, edition);
+      const value = exactValue === null ? priceMetadata.value : exactValue;
+      // Keep the former price-spread draw in the established RNG sequence, but
+      // prices now exactly match their per-wear, phase and edition snapshot.
+      if (exactValue === null) random();
+      const paintSeed = source.noWear ? null : Math.floor(random() * 1000);
       const timestamp = now();
       sequence += 1;
       let unique;
@@ -597,7 +988,9 @@
       return {
         id, skinId: source.id, weapon: source.weapon, name: source.name, rarity: source.rarity,
         wear: wear.label, wearCode: wear.code, float: wearFloat, value, caseId: source.caseId,
-        stattrak, locked: false, catalogId: source.sourceId || source.id, noWear: Boolean(source.noWear),
+        edition, stattrak, souvenir: edition === "souvenir", paintSeed, paintIndex: source.paintIndex ?? null, defIndex: source.defIndex ?? null,
+        patternFamily: patterns.family(source), priceMetadata: { ...priceMetadata, value },
+        locked: false, catalogId: source.sourceId || source.id, noWear: Boolean(source.noWear),
         phase: source.phase || null, displayName: source.displayName || source.name,
         createdAt: timestamp, art: source.art, palette: source.palette.slice()
       };
@@ -626,6 +1019,7 @@
           addXP(openingXP.openXP);
           const fresh = discover(item.skinId, openingXP.discoveryXP);
           if (!state.stats.bestDrop || item.value > state.stats.bestDrop.value) state.stats.bestDrop = clone(item);
+          recordOpening(box, item, fresh);
           return { item: clone(item), discovered: fresh, newDiscovery: fresh, xpAwarded: openingXP.openXP + (fresh ? openingXP.discoveryXP : 0) };
         });
         return { ok: true, items: clone(items), rewards, quantity,
@@ -640,41 +1034,48 @@
       return { ...result, ...reward, xp: reward.xpAwarded };
     }
 
-    function buildUpgradeQuote(ids, targetSkinId, wearCode) {
+    function buildUpgradeQuote(ids, targetSkinId, wearCode, edition = "regular") {
       if (!Array.isArray(ids) || ids.length < 1 || ids.length > 5 || ids.some(id => typeof id !== "string")) return fail("Wybierz od 1 do 5 skinów do ulepszenia.");
       const selected = new Set(ids);
       if (selected.size !== ids.length) return fail("Każdy skin można dodać do ulepszenia tylko raz.");
       const inputs = state.inventory.filter(item => selected.has(item.id));
       if (inputs.length !== selected.size) return fail("Co najmniej jeden wybrany skin nie znajduje się już w ekwipunku.");
       if (inputs.some(item => item.locked)) return fail("Ulubione skiny są chronione. Najpierw odznacz gwiazdkę przy przedmiocie.");
+      if (inputs.some(item => isItemEquipped(item.id))) return fail("Skiny wystawione w gablocie są chronione. Najpierw zdejmij je z gabloty.");
       const source = skinIndex[targetSkinId];
       if (!source) return fail("Wybierz docelowy skin z katalogu.");
       const wear = availableWear(source, wearCode);
       if (!wear) return fail("Ten skin nie występuje w wybranym stanie zużycia.");
+      const targetPrice = getSkinPrice(source.id, wear.code, edition);
+      if (!targetPrice) return fail("Ta edycja skina nie ma dostępnej wyceny w wybranym stanie.");
       const inputValue = inputs.reduce((sum, item) => sum + item.value, 0);
-      const targetValue = itemPrice(source, wear, false);
+      const targetValue = targetPrice.value;
       if (!integer(targetValue) || targetValue < Math.ceil(inputValue * 1.05)) return fail("Docelowy skin musi być wart co najmniej 105% łącznej wartości wkładu.");
       const chance = Math.min(UPGRADE_MAX_CHANCE, inputValue / targetValue * (1 - UPGRADE_HOUSE_EDGE));
       const canonicalId = source.sourceId && canonicalIndex[source.sourceId] ? source.sourceId : source.id;
       const canonical = skinIndex[canonicalId];
-      const target = { ...clone(canonical), value: targetValue, wear: wear.label, wearCode: wear.code, stattrak: false, catalogId: source.sourceId || source.id };
+      const target = { id: canonical.id, skinId: canonical.id, catalogId: source.sourceId || source.id,
+        weapon: source.weapon, name: source.name, displayName: source.displayName || source.name, phase: source.phase || null,
+        rarity: source.rarity, art: source.art, palette: source.palette.slice(), image: source.image || null,
+        value: targetValue, wear: wear.label, wearCode: wear.code, edition, stattrak: edition === "stattrak", souvenir: edition === "souvenir",
+        noWear: Boolean(source.noWear), paintIndex: source.paintIndex ?? null, defIndex: source.defIndex ?? null, patternFamily: patterns.family(source), priceMetadata: targetPrice };
       return { ok: true, ids: [...ids], inputValue, targetValue, chance, multiplier: targetValue / inputValue,
         houseEdge: UPGRADE_HOUSE_EDGE, maxChance: UPGRADE_MAX_CHANCE, targetSkinId: canonicalId,
-        wearCode: wear.code, target, inputs: clone(inputs) };
+        wearCode: wear.code, edition, target, inputs: clone(inputs) };
     }
-    function quoteUpgrade(ids, targetSkinId, wearCode) {
+    function quoteUpgrade(ids, targetSkinId, wearCode, edition = "regular") {
       if (writing) return fail("Poczekaj na zakończenie poprzedniej operacji.");
       refresh();
-      return buildUpgradeQuote(ids, targetSkinId, wearCode);
+      return buildUpgradeQuote(ids, targetSkinId, wearCode, edition);
     }
-    function upgrade(ids, targetSkinId, wearCode) {
+    function upgrade(ids, targetSkinId, wearCode, edition = "regular") {
       return transaction(() => {
         // Recalculate from the shared save. A stale quote never spends missing or locked skins.
-        const quote = buildUpgradeQuote(ids, targetSkinId, wearCode);
+        const quote = buildUpgradeQuote(ids, targetSkinId, wearCode, edition);
         if (!quote.ok) return quote;
         const roll = random();
         const won = roll < quote.chance;
-        const item = won ? itemFromSource(skinIndex[quote.targetSkinId], quote.wearCode, quote.targetValue) : null;
+        const item = won ? itemFromSource(skinIndex[quote.targetSkinId], quote.wearCode, quote.targetValue, quote.edition) : null;
         const selected = new Set(quote.ids);
         state.inventory = state.inventory.filter(input => !selected.has(input.id));
         addStat("upgradeAttempts", 1);
@@ -686,7 +1087,8 @@
           if (!state.stats.bestDrop || item.value > state.stats.bestDrop.value) state.stats.bestDrop = clone(item);
         } else addStat("upgradeLostValue", quote.inputValue);
         state.lastUpgrade = { won, item: item ? clone(item) : null, chance: quote.chance, inputValue: quote.inputValue,
-          targetValue: quote.targetValue, targetSkinId: quote.targetSkinId, wearCode: quote.wearCode, createdAt: now() };
+          targetValue: quote.targetValue, targetSkinId: quote.targetSkinId, wearCode: quote.wearCode, edition: quote.edition, createdAt: now() };
+        recordUpgrade(quote, won, item);
         return { ...quote, won, roll, item: item ? clone(item) : null, newDiscovery: fresh,
           xpAwarded: 0, quantity: quote.ids.length, level: getProgress().level };
       });
@@ -709,6 +1111,7 @@
         const found = state.inventory.filter(item => selected.has(item.id));
         if (found.length !== selected.size) return fail("Co najmniej jeden przedmiot nie znajduje się już w ekwipunku.");
         if (found.some(item => item.locked)) return fail("Ulubione przedmioty są chronione. Najpierw odznacz gwiazdkę przy przedmiocie.");
+        if (found.some(item => isItemEquipped(item.id))) return fail("Przedmioty w gablocie są chronione. Najpierw zdejmij je z gabloty.");
         const total = found.reduce((sum, item) => sum + saleValue(item.value), 0);
         if (state.balance + total > MAX_MONEY) return fail("Osiągnięto limit środków na koncie.");
         state.inventory = state.inventory.filter(item => !selected.has(item.id));
@@ -774,7 +1177,7 @@
     }
     function reset() {
       return transaction(() => {
-        state = initialState();
+        state = initialState(now());
         return { ok: true };
       });
     }
@@ -797,15 +1200,18 @@
       getWorkStatus, work, getDailyStatus, claimDaily, setSetting, reset,
       getProgress, getCaseAccess, getCampaign, claimMission, getCollections, claimCollection,
       setItemLocked, isDiscovered, quoteUpgrade, upgrade, getResources, getDropChances, getRarityChances, getOpeningXP,
-      getSkinValue(skinId, wearCode, stattrak = false) {
-        const source = skinIndex[skinId];
-        const wear = source && availableWear(source, wearCode);
-        if (!source || !wear || typeof stattrak !== "boolean") return null;
-        return itemPrice(source, wear, stattrak && supportsStatTrak(source));
+      getShowcase, getShowcaseCandidates, setShowcaseSlot, setShowcaseTitle, setShowcaseTheme, isItemEquipped,
+      getWeekly, claimWeekly, getHistory, getRecords,
+      getSkinPrice, getPatternInfo, getPriceMetadata: () => clone(catalog.META || {}),
+      getSkinValue(skinId, wearCode, edition = false) {
+        if (typeof edition !== "boolean" && typeof edition !== "string") return null;
+        const price = getSkinPrice(skinId, wearCode, typeof edition === "boolean" ? edition ? "stattrak" : "regular" : edition);
+        return price ? price.value : null;
       }
     });
   }
 
   return Object.freeze({ CASES, SKINS, RARITIES, WEARS, STORAGE_KEY, STORAGE_BACKUP_KEY, START_BALANCE, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, MAX_INVENTORY,
-    OPEN_XP, DISCOVERY_XP, MISSIONS, OPEN_QUANTITIES, UPGRADE_HOUSE_EDGE, UPGRADE_MAX_CHANCE, getDropChances, getRarityChances, getOpeningXP, createGame });
+    OPEN_XP, DISCOVERY_XP, MISSIONS, OPEN_QUANTITIES, UPGRADE_HOUSE_EDGE, UPGRADE_MAX_CHANCE, SHOWCASE_SLOTS, SHOWCASE_THEMES, HISTORY_LIMIT,
+    getDropChances, getRarityChances, getOpeningXP, getSkinPrice, getPatternInfo, createGame });
 });

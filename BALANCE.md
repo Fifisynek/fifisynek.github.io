@@ -1,79 +1,72 @@
-# Balans SKINLAB v3
+# Balans SKINLAB v5
 
-Kontrola katalogu: **4 listopada 2026**. Migawka cen Skinport: **3 listopada 2026**. Wszystkie kwoty dotyczą wirtualnej rozgrywki.
+Manifesty i migawka Skinport: **5 listopada 2026**. Pobrano ceny o **19:06:49 UTC**. Wszystkie kwoty dotyczą wirtualnej rozgrywki; działają offline i nie zmieniają się automatycznie.
 
-## Katalog i wyceny
+## Katalog i ceny
 
-Katalog obejmuje **42 oficjalne skrzynki, 16 customów i 2 symulacje terminali**, łącznie 60 pozycji. Rynek ma **2126 wariantów skinów** z oddzielnymi fazami Doppler/Gamma Doppler oraz **9305 kombinacji skin–stan**. Po połączeniu faz to 1974 wykończenia. W pulach skrzynek znajduje się 4081 pozycji, ponieważ część przedmiotów występuje w kilku kolekcjach.
+**126 pul** obejmuje 42 oficjalne skrzynki, 32 customy, 50 symulacji kolekcji oraz 2 symulacje terminali. Wszystkie **2126 pozycji katalogowych** są dostępne w otwieraniu. Po połączeniu faz pozostają 1974 wykończenia. Katalog oferuje **18 202 wyceniane kombinacje wykończenia, fazy, zużycia i edycji**: 9305 zwykłych, 5280 StatTrak i 3617 Souvenir. Seedów nie liczymy jako osobnych skinów.
 
-Każdy dostępny stan ma własną cenę w centach. Cena i zakres float identycznego wariantu są wspólne w całym katalogu. Niedostępne zużycie nie jest oferowane. Vanilla ma stan NW „Bez zużycia”. Cztery brakujące notowania są jawnie oznaczone w `estimatedWears` i `META.fallbackWears`: MP5-SD Lab Rats FN/MW/FT i Negev Mjölnir WW. Źródła, daty i odnośniki: `catalog.js`, `assets/pricing-snapshot.json`, `CREDITS.md`.
+Wycena identycznej fazy, edycji i zużycia jest wspólna dla wszystkich skrzynek. Najpierw wybierana jest najniższa oferta Skinport, jeżeli źródło podaje dostępne sztuki. Przy braku ofert używana jest cena referencyjna źródła. Braki mają jawny znacznik szacunku: 4 zwykłe wyceny, 70 StatTrak i 1257 Souvenir. Souvenir bez żadnego rzeczywistego notowania danej pozycji jest wyłączony zamiast tworzenia całej edycji z mnożnika. Pełna lista wyjątków jest w META.fallbackWears oraz w assets/pricing-snapshot.json.
 
-Drop otrzymuje równomierny rozrzut wartości ±4%. Dozwolony StatTrak ma 10% szansy i premię ×1,3. Skórki bez obsługi StatTrak, rękawice i Zeus x27 go nie otrzymują. Sprzedaż wypłaca 90% wartości, zaokrąglone w dół do centa osobno za każdy egzemplarz.
+Nowy drop ma **dokładną cenę z tabeli wybranego wariantu**, bez rozrzutu ±4%. StatTrak ma 10% szansy dla obsługujących go skinów oraz własną cenę, zamiast wspólnego mnożnika ×1,3. Otwarcie nie losuje Souvenir; tę edycję można wybrać jako cel upgradera. Sprzedaż wypłaca 90% zapisanej wartości, zaokrąglone w dół do centa dla każdego egzemplarza. Wartości przedmiotów z zapisów v2/v3 są zachowywane; nie przeliczamy ich na aktualną migawkę.
 
-Skrzynka i klucz są osobnymi zakupami. Oficjalne klucze kosztują $2,49. Tańsze customy mają odpowiednio tańsze klucze; całkowity koszt jest pokazany przed zakupem. Cena skrzynki może zawierać jawną dopłatę balansującą. To cena do rozgrywki, nie deklaracja bieżącego kursu rynkowego.
+Skrzynka i pasujący klucz są osobnymi zakupami. Oficjalne klucze kosztują $2,49. Klucze customów i symulacji kolekcji są dostosowane do wartości puli, do maksymalnie $2,49. Koszt skrzynki może zawierać jawną dopłatę balansującą. Ceny pojemników to koszt rozgrywki, nie deklaracja kursu rynkowego.
 
 ## Losowanie i wartość oczekiwana
 
-Oficjalne skrzynki używają wag kolorów **79,92% / 15,98% / 3,20% / 0,64% / 0,26%**. W obrębie koloru wszystkie pozycje, w tym oddzielne fazy, mają równe szanse. To reguła symulatora; dokładne szanse poszczególnych faz Valve nie są odtwarzane.
+Oficjalne skrzynki stosują **79,92% / 15,98% / 3,20% / 0,64% / 0,26%** dla kolejnych rzadkości, potem równy wybór wariantu w danym kolorze. Fazy są oddzielnymi wariantami; ich dokładnych szans w CS2 nie odtwarzamy. Customy, kolekcje i terminale korzystają z jawnych wag poszczególnych przedmiotów o sumie 1 000 000. Ta sama tabela służy do losowania i prezentacji procentów.
 
-Customy i symulacje terminali mają wagi każdego przedmiotu, sumujące się do **1 000 000**. Ta sama tabela służy do losowania i wyświetlania szans. Mogą zawierać wyłącznie jeden kolor, noże albo rękawice. Ich cenę wyznacza wartość całej puli, więc gwarantowany nóż ma odpowiednio wysoki koszt. Terminale odtwarzają kolekcje we wspólnej mechanice skrzynka + klucz, bez rzeczywistego procesu ofert.
+Obliczenie analityczne uwzględnia wagi, udział zakresów float w stanach, dokładne ceny zwykłe i StatTrak, szansę StatTrak oraz prowizję i zaokrąglenie sprzedaży każdego skina. Cena celuje w około 64% zwrotu; każdy pojemnik musi pozostać poniżej **65% oczekiwanego zwrotu netto**. Zaokrąglenie kosztu w centach ma zauważalny wpływ na bardzo tanie kolekcje.
 
-Obliczenie analityczne uwzględnia wagi, udział zakresów float w zużyciach, ceny stanów, obsługę StatTrak i jego premię, rozrzut ceny i prowizję. Test całkuje wypłatę dla zaokrąglonych cen w centach, zamiast dodawać nadmierny stały margines istotny przy otwarciu za $0,25. Cena celuje w około **64% zwrotu**; kontrola wymaga **nie więcej niż 65%** dla każdej skrzynki.
-
-| Grupa | Liczba | Koszt skrzynki i klucza | Oczekiwany zwrot netto, w przybliżeniu |
+| Grupa | Liczba | Koszt pojemnika i klucza | Zwrot netto z metadanych, przybliżony |
 | --- | ---: | ---: | ---: |
-| Oficjalne skrzynki | 42 | $2,59–$117,64 | 22–64% |
-| Customy | 16 | $0,25–$1184,00 | do 64% |
-| Symulacje terminali | 2 | $2,50 | 30–60% |
+| Oficjalne skrzynki | 42 | $2.64–$98.52 | 23.3–64.0% |
+| Autorskie skrzynki | 32 | $0.23–$2006.44 | 60.9–64.0% |
+| Symulacje kolekcji | 50 | $0.07–$84.32 | 55.6–64.7% |
+| Symulacje terminali | 2 | $2.50–$2.50 | 29.6–55.6% |
 
-Kosztowne kolekcje samych noży i rękawic są celami na późniejszy etap. Pozostają tanie customy i oficjalne skrzynki, którymi można realizować kampanię.
+Pule samych noży i gemów kosztują odpowiednio więcej. Pojedynczy drogi drop może dać zysk, ale wielokrotne otwieranie i natychmiastowa sprzedaż nie tworzą dodatniej wartości oczekiwanej. Próba kontrolna losuje po **5000 dropów z każdej ze 126 pul**, razem **630 000**. Zmienność drogich gemów oceniana jest granicą uwzględniającą drugi moment rozkładu, obok osobnej dokładnej kontroli analitycznej.
 
-Próba kontrolna losuje **5000 dropów na każdą z 60 skrzynek**, łącznie **300 000**, z ziarnem `0x534b494e`. Podglądy nie zmieniają stanu ani XP. Drogie odmiany gem powodują dużą zmienność: ograniczona próba może zwrócić więcej niż koszt otwarć. Test porównuje wynik z konserwatywną granicą uwzględniającą drugi moment rozkładu. O ujemnej wartości oczekiwanej rozstrzyga osobna kontrola analityczna wszystkich wag i cen.
+## Patterny
+
+Malowane przedmioty otrzymują paint seed 0–999, dopiero po pozostałych losowaniach wyniku. Seed 1000 można odczytać lub obejrzeć w atlasie, ale nie wylosować ze zwykłego otwarcia. Vanilla nie ma seeda. Starszy zapis bez seeda zachowuje wartość i oznaczenie nieznanego wzoru; aktualizacja nie losuje go ponownie.
+
+Fade i pokrycie kolorem pochodzą z przypiętych wersji otwartych danych społeczności. Są zależne od modelu i seeda. Pokrycie Case Hardened/Heat Treated identyfikowane jest po dokładnych defIndex i paintIndex. Te wskaźniki są przybliżonymi metrykami społeczności; nie są oficjalnymi stopniami Valve. Obraz przedstawia wykończenie katalogowe, a nie render 3D konkretnego seeda.
+
+**Nie doliczamy premii za seed**, nie tworzymy własnych cen Blue Gem ani mnożników od procenta Fade. Skinport dostarcza cenę fazy, zużycia i edycji; nie jest źródłem konkretnej premii za rzadki pattern. Seed, zużycie i edycja nie dają osobnego odkrycia ani dodatkowego XP. Fazy pozostają osobnymi odkryciami.
 
 ## Upgrader
 
-Wkład to od 1 do 5 różnych, niezablokowanych egzemplarzy. Cel musi mieć prawidłowe zużycie i kosztować co najmniej **105% sumy wkładu**:
+Wkład obejmuje 1–5 różnych, dostępnych skinów. Ulubione i przedmioty z gabloty są chronione. Cel ma określony stan i edycję oraz cenę co najmniej 105% sumy wkładu:
 
-```
-szansa = min(0,75; wartość wkładu / wartość celu × 0,90)
-```
+    szansa = min(0,75; wartość wkładu / cena celu × 0,90)
 
-Wkład $10 i cel $20 dają 45%. Oczekiwana wartość otrzymanego skina nie przekracza **90% wkładu**, a po późniejszej sprzedaży i prowizji około **81%**. Limit 75% może ten zwrot dodatkowo obniżyć. Nie ma szansy gwarantowanej ani minimalnej szansy zaokrąglającej bardzo rzadkie próby w górę.
+Wkład $10 i cel $20 dają 45%. Wartość oczekiwana nagrody nie przekracza 90% wkładu, a po prowizji około 81%. Limit 75% może ten zwrot dodatkowo zmniejszyć. Nie ma gwarantowanej ani minimalnej szansy podnoszącej bardzo małe prawdopodobieństwa.
 
-Wkład jest zużywany po sukcesie i po porażce. Sukces daje jeden cel po dokładnie podanej cenie, bez losowej premii i StatTrak, z float w prawidłowym zakresie wybranego stanu. Porażka nie zwraca wkładu.
+Wkład jest zużywany przy sukcesie i porażce. Sukces daje dokładnie wybrany wariant i cenę, z float w dozwolonym przecięciu zakresów oraz nowym seedem, jeżeli przedmiot ma malowanie. Upgrader zapisuje odkrycia, lecz **nie daje XP** i nie zwiększa liczników otwarć ani odwiedzonych skrzynek. Wynik i zużycie są zapisywane przed animacją, a zasoby ponownie sprawdzane przed transakcją.
 
-Upgrader zapisuje odkrycia, ale **nie przyznaje XP** i nie zwiększa liczników otwarć ani odwiedzonych skrzynek. Zapobiega to zdobywaniu poziomów przez serię ulepszeń skinów wartych kilka centów. Wynik zapisuje się przed animacją, a próba ponownie sprawdza zasoby, także po zmianach w drugiej karcie.
+## Kariera i pozostałe nagrody
 
-## XP, albumy i otwarcia zbiorcze
+Otwarcie 1/2/3/5 pojemników to jedna atomowa transakcja: wszystkie zasoby i miejsca są sprawdzane przed losowaniem. Brak klucza lub miejsca odrzuca całą partię. Pominięcie animacji nie zmienia nagród. Animacja zwykła trwa 4,8 s, szybka 1,5 s.
 
-Otwarcie 1/2/3/5 skrzynek jest jedną transakcją. Najpierw sprawdzane są wszystkie zasoby i miejsce na wszystkie wyniki, dopiero potem losowane niezależne dropy i zapisywana cała zmiana. Brak jednego klucza nie zużywa pozostałych. Pominięcie animacji nie zmienia nagród.
+Otwarcie za co najmniej $2,49 daje 25 XP i 10 XP za nowe odkrycie. Dla tańszego kosztu stosowana jest skala min(1; koszt / 249 centów), a XP jest zaokrąglane w dół z minimum 1. Budget Run za $0.23 daje 2 XP za otwarcie i 1 XP za nowe odkrycie. Praca, bonus, zakupy, sprzedaż i podglądy nie dają XP.
 
-Każda transakcja sprawdza integralność wspólnego zapisu przed użyciem jego środków. Cały stan ma sumę kontrolną i zweryfikowaną kopię; podmiana pojedynczego pola nie przechodzi do ekonomii. Podczas pierwszej migracji wcześniejszego, niechronionego zapisu saldo można odtworzyć z kwoty początkowej oraz poprawnych, nieprzepełnionych liczników wpływów i wydatków. Kontrola po stronie klienta utrudnia proste edycje pamięci, ale nie gwarantuje ochrony przed osobą modyfikującą kod i wszystkie dane lokalne. Pełny antycheat wymaga serwera.
+Kampania ma 18 nagród. Finał wymaga poziomu 20, 500 otwarć, 180 odkryć i 18 odwiedzonych pul; nóż nie jest wymagany. Oficjalny album wymaga wszystkich zwykłych skinów, custom i symulacja kolekcji całej puli. Nagroda albumu wynosi jednorazowo $5 i 200 XP. Odkrycia pozostają po sprzedaży i użyciu w upgraderze.
 
-Otwarcie kosztujące co najmniej $2,49 daje 25 XP i 10 XP za nowe odkrycie. Dla tańszych skrzynek stosuje się:
+Praca daje $0,10–$0,18 z sekundą odstępu, a bonus dzienny $2,50. Cztery tygodniowe cele przyznają razem 170 XP i zasoby do pięciu otwarć: Dreams & Nightmares, Revolution, dwa Budget Run i Gallery, wszystkie z kluczami, łącznie $9.52 według tej migawki. Nagrody są jednorazowe w danym lokalnym tygodniu rozpoczynającym się w poniedziałek. Upgrader nie zalicza celów tygodnia. Motywy gabloty pozostają odblokowane, a cofnięcie zegara nie odtwarza odebranych nagród.
 
-```
-skala = min(1; całkowity koszt otwarcia / 249 centów)
-XP otwarcia = max(1; floor(25 × skala))
-XP odkrycia = max(1; floor(10 × skala))
-```
+Historia ma limit 200 zdarzeń. Łączne koszty, wartości i rekordy są poza limitem; pozostają też po sprzedaży przedmiotów. Wyświetlany bilans dropów po hipotetycznej prowizji minus koszt nie dopisuje pieniędzy do portfela. Gablota i eksport PNG również nie zmieniają ekonomii.
 
-Budget Run za $0,25 daje zatem **2 XP za otwarcie i 1 XP za nowe odkrycie**, a pięć takich samych dropów w partii daje 11 XP. Tanie skrzynki zwiększają wybór, ale nie pozwalają kupować pełnego XP dziesięć razy taniej. Każde odkrycie płaci tylko raz, także w partii; zużycie i StatTrak nie są odrębnymi odkryciami, fazy są. Praca, bonus, zakupy i sprzedaż nie dają XP.
+## Zapis i weryfikacja
 
-Oficjalny album nie wymaga złotych dropów. **Custom wymaga całej swojej puli**, także złotych przedmiotów. Skrzynka samych noży nie ma pustego, automatycznie ukończonego albumu. Nagroda albumu wynosi jednorazowo $5 i 200 XP. Odkrycia pozostają po sprzedaży i ulepszaniu.
+Suma kontrolna stanu oraz zweryfikowana kopia wykrywają proste podmiany danych. Kontrola odbywa się przy wczytywaniu, synchronizacji kart i przed transakcją. Migracja dawnego niechronionego zapisu sprawdza saldo z kwoty początkowej i prawidłowych liczników wpływów oraz wydatków. To zabezpieczenie lokalne; pełny antycheat wymaga zaufanego serwera. Szczegóły odzyskiwania danych są w README.
 
-Praca daje $0,10–$0,18 raz na sekundę, najwyżej $10,80 na minutę przy utrzymanej serii. Bonus dzienny wynosi $2,50. Kampania ma 18 jednorazowych nagród, a finał wymaga poziomu 20, 500 otwarć, 180 odkryć i odwiedzenia 18 skrzynek. Noże nie są wymagane.
+Identyfikatory i kolejność wszystkich wcześniejszych 60 pul są zachowane. Nowe pola seeda, edycji i pochodzenia ceny rozszerzają format v3 bez resetu. Test pełnej kampanii rozgrywa 500 otwarć, sprzedaje dropy, zarabia przez zwykłą pracę i odbiera misje bez dopisywania zasobów do stanu.
 
-## Pełne przejście kontrolne
+Pełne przejście kontrolne z ziarnem 0x43415245 osiągnęło poziom 20 po 500 otwarciach: 126 odblokowanych pul, 94 odwiedzone pule, 384 odkrycia i wszystkie 18 misji. Wykonano 5404 zwykłe akcje pracy, czyli około 90 minut przy sekundowym odstępie, oprócz animacji i przeglądania. To pojedynczy powtarzalny przebieg, nie obietnica czasu dla każdego gracza.
 
-Test z ziarnem `0x43415245` rozgrywa 500 otwarć bez dopisywania gotówki, przedmiotów, XP i nagród do stanu. Wybiera najmniej odwiedzaną odblokowaną skrzynkę o koszcie poniżej $20, sprzedaje dropy, zarabia brakujące środki zwykłą pracą i odbiera dostępne misje. Korzysta ze startowych $100 oraz jednego bonusu dziennego.
+Kontrole uruchamia polecenie:
 
-Wynik v3 po skalowaniu XP: **poziom 20, 60 odblokowanych skrzynek, 49 odwiedzonych kolekcji, 313 odkryć i wszystkie 18 misji ukończonych**. Wymagał **7916 akcji pracy**, czyli około **132 minut** pracy raz na sekundę, oprócz animacji i przeglądania. To jeden powtarzalny przebieg, nie obietnica czasu dla wszystkich. Bonusy dzienne, wybór skrzynek i zachowywanie skinów wpływają na tempo.
+    node --test tests/*.test.cjs
 
-## Powtarzalna kontrola
-
-```powershell
-node --test tests/*.test.cjs
-```
-
-Testy obejmują pełne oficjalne pule względem niezależnej migawki manifestu, granice wag customów, możliwe zużycia, spójne ceny, analityczną ekonomię wszystkich skrzynek, próbę 300 000 dropów, pełną kampanię, rzeczywisty zapis v2, zasoby offline, atomowe partie, upgrader, ograniczenia XP i ochronę przed podwójnym wydaniem zasobów w dwóch kartach. Kontroler interfejsu jest dodatkowo wykonywany w Node: zdarzenia zakupów → partii → ekwipunku → wygranej i przegranej upgradera sprawdzają rzeczywiste zmiany zapisu. Układ strony i animacje wymagają osobnej kontroli w przeglądarce.
+Obejmują zgodność oficjalnych pul z migawką manifestu, wszystkie wcześniejsze indeksy, cenę dokładnej fazy i edycji, migrację i integralność zapisu, seedy, rzeczywiste tabele patternów, zasoby offline, analityczny balans wszystkich pojemników, próbę 630 000 dropów oraz pełną kampanię. Kontroler i eksport PNG są wykonywane w Node z zastąpionym układem, animacją i płótnem. Te testy nie zastępują wizualnej kontroli wyglądu i płynności w przeglądarce.

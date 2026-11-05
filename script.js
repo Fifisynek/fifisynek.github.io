@@ -11,7 +11,9 @@
   const feePercent = Math.round(SALE_FEE * 100);
   const totalSkins = SKINS.length;
   const officialCount = CASES.filter(box => !box.isCustom && !box.isTerminal).length;
-  const customCount = CASES.filter(box => box.isCustom).length;
+  const customCount = CASES.filter(box => box.isCustom && !box.isCollection).length;
+  const collectionCount = CASES.filter(box => box.isCollection).length;
+  const terminalCount = CASES.filter(box => box.isTerminal).length;
   const game = window.CaseGame.createGame();
   const assets = window.CaseAssets || { cases: {}, skins: {}, hero: {} };
   const modal = $('#modal');
@@ -24,6 +26,7 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const caseById = id => CASES.find(box => box.id === id);
   const sale = value => game.saleValue(value);
+  const protectedItem = item => item.locked || game.isItemEquipped?.(item.id);
   let state = game.getState();
   let route = location.hash.slice(1) || 'cases';
   let spinning = false;
@@ -32,7 +35,11 @@
   let catalogQuery = '', catalogSort = 'level', catalogPage = 1;
   let catalogOrigin = 'all', shopOrigin = 'all';
   let shopQuery = '', shopUnlocked = true;
-  let careerTab = 'missions', careerChapter = null, careerCollection = null;
+  let careerTab = route.startsWith('career/')?route.split('/')[1]:'missions', careerChapter = null, careerCollection = null;
+  const historyOptions = {type:'all',query:'',rarity:'all',sort:'newest',page:1};
+  let showcasePicker = null;
+  let inspectOptions = null;
+  const atlasOptions = {query:'',type:'all',rarity:'all',phase:'all',pattern:'all',edition:'regular',wear:'MW',sort:'value_asc',page:1};
   let scrollToCatalogOnRoute = false;
   let lastHash = location.hash || '#cases';
   let toastTimer;
@@ -41,7 +48,7 @@
   let spinAnimation;
   let openingCount = 1, poolPage = 1, poolRarity = 'all', poolWear = 'all', poolQuery = '';
   let lastBatch = null;
-  const upgradeOptions = {ids:[],target:null,wear:'MW',query:'',rarity:'all',page:1,inputQuery:'',inputPage:1,inputSort:'newest',targetSort:'value_asc'};
+  const upgradeOptions = {ids:[],target:null,wear:'MW',edition:'regular',query:'',rarity:'all',page:1,inputQuery:'',inputPage:1,inputSort:'newest',targetSort:'value_asc'};
   let sessionEarnings = 0;
   let sessionWorks = 0;
   let resultItem = null;
@@ -54,7 +61,9 @@
   const caseImage = (id, cls = '', eager = false) => image(assets.cases[id], `Skrzynka ${caseById(id)?.name || ''}`, cls, eager);
   const rarityDots = box => `<span class="rarity-dots" aria-label="Rzadkości w puli">${Object.values(RARITIES).filter(r => box ? game.getRarityChances(box.id)[r.id] > 0 : r.weight > 0).map(rarity => `<i style="--r:${rarity.color}"></i>`).join('')}</span>`;
   const button = (text, action, extra = '', cls = '') => `<button class="button ${cls}" data-action="${action}" ${extra}>${text}</button>`;
-  const originMatches = (box, origin) => origin === 'all' || origin === 'custom' && box.isCustom || origin === 'terminal' && box.isTerminal || origin === 'official' && !box.isCustom && !box.isTerminal;
+  const originMatches = (box, origin) => origin === 'all' || origin === 'custom' && box.isCustom && !box.isCollection || origin === 'collection' && box.isCollection || origin === 'terminal' && box.isTerminal || origin === 'official' && !box.isCustom && !box.isTerminal;
+  const patternTags = item => window.SkinView?.patternTags(careerContext(),item) || '';
+  const editionLabel = item => item.stattrak ? 'StatTrak™ ' : item.souvenir ? 'Souvenir ' : '';
 
   function wearMeter(item, compact = false) {
     if (item.noWear || item.wearCode === 'NW') return `<p class="no-wear-label">Bez parametru zużycia</p>`;
@@ -101,7 +110,7 @@
     const progression = game.getProgress();
     $('#player-level').textContent = progression.level;
     $('.level-avatar').title = `Poziom ${progression.level} · ${progression.rank}`;
-    const readyRewards = game.getCampaign().filter(m => m.available && m.completed && !m.claimed).length + game.getCollections().filter(c => c.complete && !c.claimed).length;
+    const readyRewards = game.getCampaign().filter(m => m.available && m.completed && !m.claimed).length + game.getCollections().filter(c => c.complete && !c.claimed).length + (game.getWeekly?.().missions.filter(m=>m.completed&&!m.claimed).length||0);
     $('#career-count').textContent = readyRewards;
     $('#career-count').hidden = readyRewards === 0;
     const soundButton = $('#sound-toggle');
@@ -110,7 +119,7 @@
     soundButton.title = state.settings.sound ? 'Dźwięk włączony' : 'Dźwięk wyłączony';
     soundButton.setAttribute('aria-pressed', String(state.settings.sound));
     document.querySelectorAll('[data-nav]').forEach(link => {
-      const active = link.dataset.nav === (route.startsWith('case/') ? 'cases' : route);
+      const active = link.dataset.nav === (route.startsWith('case/') ? 'cases' : route.startsWith('career/') ? 'career' : ['showcase','skins'].includes(route)?'inventory':route);
       link.classList.toggle('active', active);
       if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
     });
@@ -133,7 +142,7 @@
   }
 
   function careerContext() {
-    return { game, state, icon, escape, button, money, caseImage, skinCard, cases: CASES, skins:SKINS, image, skinImage, itemName, percent, rarities:RARITIES, assets, feePercent, plural, sound };
+    return { game, state, icon, escape, button, money, caseImage, skinCard, cases: CASES, skins:SKINS, image, skinImage, itemName, percent, rarities:RARITIES, assets, feePercent, plural, sound, patternTags, catalogMeta:window.CaseCatalog?.META || {} };
   }
 
   function caseCard(box) {
@@ -141,7 +150,7 @@
     const access = game.getCaseAccess(box.id);
     const collection = game.getCollections().find(c => c.caseId === box.id);
     return `<article class="case-card ${access.unlocked ? '' : 'locked-case'} ${box.isCustom ? 'custom-box' : ''}" style="--case-color:${box.accent}">
-      <div class="card-topline"><span>${box.isCustom ? 'SKINLAB ORIGINAL' : box.isTerminal ? 'TERMINAL · SYMULACJA' : `KOLEKCJA ${box.year}`}</span><span class="case-badge ${access.unlocked ? 'featured' : ''}">${access.unlocked ? escape(box.tierLabel || 'ODBLOKOWANA') : `${icon('lock')} POZ. ${access.requiredLevel}`}</span></div>
+      <div class="card-topline"><span>${box.isCollection ? 'KOLEKCJA · SYMULACJA' : box.isCustom ? 'SKINLAB ORIGINAL' : box.isTerminal ? 'TERMINAL · SYMULACJA' : `KOLEKCJA ${box.year}`}</span><span class="case-badge ${access.unlocked ? 'featured' : ''}">${access.unlocked ? escape(box.tierLabel || 'ODBLOKOWANA') : `${icon('lock')} POZ. ${access.requiredLevel}`}</span></div>
       <a href="#case/${box.id}" class="case-art" aria-label="Zobacz skrzynkę ${escape(box.name)}">${caseImage(box.id)}</a>
       <h3><a href="#case/${box.id}">${escape(box.name)}</a></h3>
       <div class="case-meta">${rarityDots(box)}<span>${box.skins.length} wykończeń · ${escape(box.rareType)}</span></div>
@@ -156,13 +165,13 @@
     const owned = CASES.reduce((sum, box) => sum + state.cases[box.id], 0);
     const daily = game.getDailyStatus();
     app.innerHTML = `<section class="hero" aria-labelledby="hero-title">
-      <div class="hero-copy"><p class="eyebrow"><span class="dash"></span> ${officialCount} SKRZYNKI CS2 · ${customCount} CUSTOM · ${totalSkins} SKINÓW</p><h1 id="hero-title">Zbuduj kolekcję.<br><span>Zostań Kuratorem.</span></h1><p class="hero-description">Pełny katalog CS2 i autorskie skrzynki SKINLAB.<br>Otwieraj seriami. Zbieraj. Ulepszaj swoje dropy.</p><div class="hero-actions">${button(`${icon('box')} Wybierz skrzynkę ${icon('arrow')}`, 'scroll-catalog')}<a class="hero-career-link" href="#upgrader">Sprawdź upgrader ${icon('up')}</a></div></div>
+      <div class="hero-copy"><p class="eyebrow"><span class="dash"></span> ${officialCount} SKRZYNKI CS2 · ${customCount} CUSTOM · ${collectionCount} KOLEKCJI · ${totalSkins} SKINÓW</p><h1 id="hero-title">Zbuduj kolekcję.<br><span>Zostań Kuratorem.</span></h1><p class="hero-description">Dopplery, fazy i tysiące wykończeń do odkrycia.<br>Porównuj wzory. Otwieraj seriami. Buduj kolekcję.</p><div class="hero-actions">${button(`${icon('box')} Wybierz skrzynkę ${icon('arrow')}`, 'scroll-catalog')}<a class="hero-career-link" href="#skins">Atlas skinów i patternów ${icon('up')}</a></div></div>
       <div class="hero-visual" aria-hidden="true"><span class="hero-outline">RARE</span>${image(assets.hero.nightwish || skinImage(CASES[0].skins[15]), '', 'hero-weapon', true)}${caseImage('dnm', 'hero-case', true)}${image(assets.hero.kukri, '', 'hero-knife', true)}<span class="hero-rarity">${icon('star')}<span><b>0,26%</b><small>JEDEN DROP. WIELKIE EMOCJE.</small></span></span><span class="hero-tag"><small>COVERT COLLECTION</small><b>AK-47 · Nightwish</b></span><span class="cross one">+</span><span class="cross two">+</span></div>
     </section>
     ${statsBar()}
-    ${window.CareerView.teaser(careerContext())}
-    <section id="catalog" aria-labelledby="cases-title"><div class="section-head"><div><p class="eyebrow">${officialCount} OFICJALNE · ${customCount} AUTORSKICH · 2 TERMINALE</p><h2 id="cases-title">Wybierz swoją skrzynkę<small>${CASES.length} kolekcji</small></h2></div><button class="text-button" data-action="odds">${icon('info')} Szanse wylotu</button></div>
-    <div class="catalog-toolbar"><div class="segmented" aria-label="Filtr skrzynek">${[['all', 'Wszystkie'], ['unlocked', `Odblokowane (${game.getProgress().unlockedCases})`], ['owned', `Moje (${owned})`]].map(([id, label]) => `<button class="${selectedFilter === id ? 'active' : ''}" data-action="case-filter" data-filter="${id}" aria-pressed="${selectedFilter === id}">${label}</button>`).join('')}</div><label class="search-field">${icon('search')}<input id="case-search" type="search" aria-label="Szukaj skrzynki" placeholder="Znajdź kolekcję…" value="${escape(catalogQuery)}"></label><select id="case-origin" class="filter-select" aria-label="Rodzaj skrzynek"><option value="all" ${catalogOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${catalogOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${catalogOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="terminal" ${catalogOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><select id="case-sort" class="filter-select" aria-label="Sortuj skrzynki"><option value="level" ${catalogSort === 'level' ? 'selected' : ''}>Według poziomu</option><option value="price" ${catalogSort === 'price' ? 'selected' : ''}>Najtańsze otwarcie</option><option value="price_desc" ${catalogSort === 'price_desc' ? 'selected' : ''}>Najdroższe otwarcie</option><option value="name" ${catalogSort === 'name' ? 'selected' : ''}>Nazwa A–Z</option></select></div><p id="catalog-count" class="filter-results"></p><div id="catalog-grid" class="case-grid"></div><div id="catalog-pagination"></div></section>
+    ${window.CareerView.teaser(careerContext())}<div class="collection-shortcuts"><a href="#showcase">${icon("star")}<span><b>Twoja gablota</b><small>Ułóż wymarzony zestaw i zapisz obrazek.</small></span>${icon("arrow")}</a><a href="#career/weekly">${icon("gift")}<span><b>Wyzwania tygodnia</b><small>Zdobywaj skrzynki, klucze i motywy.</small></span>${icon("arrow")}</a><a href="#career/history">${icon("clock")}<span><b>Historia i rekordy</b><small>Każde otwarcie tworzy Twoją historię.</small></span>${icon("arrow")}</a></div>
+    <section id="catalog" aria-labelledby="cases-title"><div class="section-head"><div><p class="eyebrow">${officialCount} OFICJALNE · ${customCount} AUTORSKICH · ${collectionCount} KOLEKCJI · ${terminalCount} TERMINALE</p><h2 id="cases-title">Wybierz swoją skrzynkę<small>${CASES.length} kolekcji</small></h2></div><button class="text-button" data-action="odds">${icon('info')} Szanse wylotu</button></div>
+    <div class="catalog-toolbar"><div class="segmented" aria-label="Filtr skrzynek">${[['all', 'Wszystkie'], ['unlocked', `Odblokowane (${game.getProgress().unlockedCases})`], ['owned', `Moje (${owned})`]].map(([id, label]) => `<button class="${selectedFilter === id ? 'active' : ''}" data-action="case-filter" data-filter="${id}" aria-pressed="${selectedFilter === id}">${label}</button>`).join('')}</div><label class="search-field">${icon('search')}<input id="case-search" type="search" aria-label="Szukaj skrzynki" placeholder="Znajdź kolekcję…" value="${escape(catalogQuery)}"></label><select id="case-origin" class="filter-select" aria-label="Rodzaj skrzynek"><option value="all" ${catalogOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${catalogOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${catalogOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="collection" ${catalogOrigin === 'collection' ? 'selected' : ''}>Kolekcje · symulacja</option><option value="terminal" ${catalogOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><select id="case-sort" class="filter-select" aria-label="Sortuj skrzynki"><option value="level" ${catalogSort === 'level' ? 'selected' : ''}>Według poziomu</option><option value="price" ${catalogSort === 'price' ? 'selected' : ''}>Najtańsze otwarcie</option><option value="price_desc" ${catalogSort === 'price_desc' ? 'selected' : ''}>Najdroższe otwarcie</option><option value="name" ${catalogSort === 'name' ? 'selected' : ''}>Nazwa A–Z</option></select></div><p id="catalog-count" class="filter-results"></p><div id="catalog-grid" class="case-grid"></div><div id="catalog-pagination"></div></section>
     <div class="promo-row"><article class="promo"><span class="promo-icon">${icon('gift')}</span><div><h3>Dobry dzień zaczyna się od bonusu.</h3><p>Wracaj codziennie i odbieraj ${money(DAILY_REWARD)} na kolejne otwarcia.</p></div>${button(daily.available ? `Odbierz bonus ${icon('arrow')}` : `Odebrano ${icon('check')}`, 'daily', daily.available ? '' : 'disabled', 'small outline')}</article><article class="promo alt"><span class="promo-icon">${icon('bolt')}</span><div><h3>Więcej kliknięć. Więcej skrzynek.</h3><p>Zarabiaj w grze i rozkręcaj swoją kolekcję.</p></div><a class="button small outline" href="#earn">Zarabiaj ${icon('up')}</a></article></div>
     <div class="trust-row"><span>${icon('shield')} Bez prawdziwych pieniędzy</span><span>${icon('check')} Automatyczny zapis postępu</span><span>${icon('info')} Przejrzyste szanse losowania</span></div>`;
     renderCatalogGrid();
@@ -182,19 +191,21 @@
 
   function skinCard(item, inventory = false) {
     const rarity = RARITIES[item.rarity];
+    const equipped = inventory && game.isItemEquipped?.(item.id);
+    const protectedSkin = item.locked || equipped;
     const finish = itemName(item);
     const previewWear = item.previewWear && item.previewWear !== 'all' ? item.previewWear : null;
     const availableWears = window.CaseGame.WEARS.filter(wear => game.getSkinValue(item.skinId || item.id,wear.code) !== null).map(wear=>wear.code);
     const wearLabel = inventory ? item.wearCode : item.wearCode || previewWear || (item.noWear ? 'NW' : availableWears.length > 1 ? `${availableWears[0]}–${availableWears.at(-1)}` : availableWears[0] || '—');
     const shownPrice = item.value ?? item.previewPrice ?? item.baseValue;
     return `<article class="skin-card ${item.locked ? 'favorite-skin' : ''}" style="--rarity:${rarity.color}">
-      ${item.stattrak ? '<span class="stattrak">StatTrak™</span>' : ''}
+      ${item.stattrak ? '<span class="stattrak">StatTrak™</span>' : item.souvenir ? '<span class="stattrak edition-souvenir">Souvenir</span>' : ''}
       ${item.dropChance != null ? `<span class="drop-chance">${percent(item.dropChance)}</span>` : ''}
       ${inventory ? `<button class="favorite-button ${item.locked ? 'active' : ''}" data-action="lock-item" data-id="${escape(item.id)}" aria-label="${item.locked ? 'Odblokuj sprzedaż' : 'Chroń przed sprzedażą'} ${escape(item.weapon + ' ' + item.name)}" aria-pressed="${!!item.locked}">${icon('star')}</button>` : ''}
-      <div class="skin-image">${image(skinImage(item), `${item.weapon} | ${finish}`)}</div>
+      <button class="skin-image skin-inspect-art" data-action="inspect-skin" data-skin="${escape(item.catalogId || item.sourceId || item.skinId || item.id)}" ${inventory ? `data-item="${escape(item.id)}"` : ''} data-wear="${escape(item.wearCode || previewWear || (item.noWear ? 'NW' : availableWears.includes('MW') ? 'MW' : availableWears[0]))}" data-edition="${item.stattrak ? 'stattrak' : item.souvenir ? 'souvenir' : 'regular'}" aria-label="Obejrzyj ${escape(item.weapon + ' ' + finish)}">${image(skinImage(item), `${item.weapon} | ${finish}`)}</button>
       <span class="weapon">${escape(item.weapon)}</span><h3 title="${escape(finish)}">${escape(finish)}</h3>
       <div class="skin-rarity">${rarity.label}</div><div class="skin-bottom"><span class="skin-price">${shownPrice ? money(shownPrice) : '—'}</span><span class="wear" title="${escape(item.wear || 'Dostępne stany zużycia')}">${escape(wearLabel)}</span></div>
-      ${inventory ? `<p class="skin-wear-full">${escape(item.wear)}</p><p class="float">${item.noWear ? 'Wykończenie bez zużycia' : `Float: ${item.float.toFixed(6)}`}</p>${wearMeter(item,true)}<div class="inventory-skin-actions"><button class="sell-button" data-action="sell" data-id="${escape(item.id)}" ${item.locked ? 'disabled' : ''} aria-label="Sprzedaj ${escape(item.weapon + ' ' + finish)} za ${money(sale(item.value))}">${item.locked ? `${icon('lock')} Chroniony` : `Sprzedaj · ${money(sale(item.value))}`}</button><button class="skin-upgrade-button" data-action="send-upgrader" data-id="${escape(item.id)}" ${item.locked ? 'disabled' : ''} aria-label="Ulepsz ${escape(item.weapon + ' ' + finish)}">${icon('upgrade')}</button></div>` : ''}
+      ${inventory ? `<p class="skin-wear-full">${escape(item.wear)}${equipped?' · W gablocie':''}</p><p class="float">${item.noWear ? 'Wykończenie bez zużycia' : `Float: ${item.float.toFixed(6)}`}</p>${wearMeter(item,true)}${patternTags(item)}<div class="inventory-skin-actions"><button class="sell-button" data-action="sell" data-id="${escape(item.id)}" ${protectedSkin ? 'disabled' : ''} aria-label="${equipped?'Skin w gablocie':`Sprzedaj ${escape(item.weapon + ' ' + finish)} za ${money(sale(item.value))}`}">${protectedSkin ? `${icon('lock')} ${equipped?'W gablocie':'Chroniony'}` : `Sprzedaj · ${money(sale(item.value))}`}</button><button class="skin-upgrade-button" data-action="send-upgrader" data-id="${escape(item.id)}" ${protectedSkin ? 'disabled' : ''} aria-label="Ulepsz ${escape(item.weapon + ' ' + finish)}">${icon('upgrade')}</button></div>` : ''}
     </article>`;
   }
 
@@ -222,7 +233,7 @@
 
 
   function renderShop() {
-    app.innerHTML = `<div class="view-heading"><p class="eyebrow"><span class="dash"></span> UZUPEŁNIJ ZAPASY</p><h1>Sklep ze skrzynkami</h1><p>Skrzynkę i klucz kupujesz osobno. Droższe kolekcje odblokujesz wraz z rozwojem kariery.</p></div><div class="info-banner">${icon('info')}<span>Każda skrzynka wymaga <strong>własnego, pasującego klucza</strong>. Saldo jest wspólne — zdecyduj, którą kolekcję chcesz teraz rozwijać.</span></div><div class="shop-toolbar"><label class="search-field">${icon('search')}<input id="shop-search" type="search" aria-label="Szukaj w sklepie" placeholder="Znajdź skrzynkę…" value="${escape(shopQuery)}"></label><select id="shop-origin" class="filter-select" aria-label="Rodzaj skrzynek w sklepie"><option value="all" ${shopOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${shopOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${shopOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="terminal" ${shopOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><label class="toggle"><input id="shop-unlocked" type="checkbox" ${shopUnlocked ? 'checked' : ''}>Tylko odblokowane</label><a class="button small outline" href="#career">${icon('trophy')} Poziom ${game.getProgress().level}</a></div><p class="filter-results" id="shop-count"></p><div class="shop-grid" id="shop-grid"></div><div class="trust-row"><span>${icon('wallet')} Wirtualne środki</span><span>${icon('check')} Zakupy zapisują się automatycznie</span><a href="#earn">Brakuje środków? Zarabiaj w grze ${icon('arrow')}</a></div>`;
+    app.innerHTML = `<div class="view-heading"><p class="eyebrow"><span class="dash"></span> UZUPEŁNIJ ZAPASY</p><h1>Sklep ze skrzynkami</h1><p>Skrzynkę i klucz kupujesz osobno. Droższe kolekcje odblokujesz wraz z rozwojem kariery.</p></div><div class="info-banner">${icon('info')}<span>Każda skrzynka wymaga <strong>własnego, pasującego klucza</strong>. Saldo jest wspólne — zdecyduj, którą kolekcję chcesz teraz rozwijać.</span></div><div class="shop-toolbar"><label class="search-field">${icon('search')}<input id="shop-search" type="search" aria-label="Szukaj w sklepie" placeholder="Znajdź skrzynkę…" value="${escape(shopQuery)}"></label><select id="shop-origin" class="filter-select" aria-label="Rodzaj skrzynek w sklepie"><option value="all" ${shopOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${shopOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${shopOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="collection" ${shopOrigin === 'collection' ? 'selected' : ''}>Kolekcje · symulacja</option><option value="terminal" ${shopOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><label class="toggle"><input id="shop-unlocked" type="checkbox" ${shopUnlocked ? 'checked' : ''}>Tylko odblokowane</label><a class="button small outline" href="#career">${icon('trophy')} Poziom ${game.getProgress().level}</a></div><p class="filter-results" id="shop-count"></p><div class="shop-grid" id="shop-grid"></div><div class="trust-row"><span>${icon('wallet')} Wirtualne środki</span><span>${icon('check')} Zakupy zapisują się automatycznie</span><a href="#earn">Brakuje środków? Zarabiaj w grze ${icon('arrow')}</a></div>`;
     renderShopGrid();
   }
 
@@ -243,6 +254,30 @@
     app.innerHTML=window.InventoryView.render(careerContext(),inventoryFilter);
     renderInventoryGrid();
   }
+  function renderShowcase() { app.innerHTML=window.CollectionView.showcase(careerContext()); }
+  function renderAtlas() { app.innerHTML=window.SkinView.atlas(careerContext(),atlasOptions); }
+  function inspectResultLink(item) {
+    return button(`${icon('search')} Wzór i wycena`, 'inspect-skin', `data-skin="${escape(item.catalogId || item.sourceId || item.skinId)}" data-item="${escape(item.id)}"`, 'skin-inspect-link small outline');
+  }
+  function showInspector(options) {
+    const owned = options.itemId && state.inventory.find(item => item.id === options.itemId);
+    const id = owned?.catalogId || owned?.sourceId || options.skinId;
+    const source = SKINS.find(skin => skin.id === id) || CASES.flatMap(box => box.skins).find(skin => skin.id === id);
+    inspectOptions = {...options, skinId:source?.sourceId || source?.id || id};
+    showModal(window.SkinView.inspect(careerContext(),inspectOptions),true);
+  }
+  function renderShowcasePicker() {
+    if(showcasePicker)content.innerHTML=window.CollectionView.picker(careerContext(),showcasePicker);
+  }
+  async function exportShowcase() {
+    const control=$('#showcase-export');
+    if(control){control.disabled=true;control.textContent='Przygotowuję obrazek…';}
+    try{
+      const result=await window.ShowcaseExport.download(careerContext(),game.getShowcase());
+      toast(result.missingImages?`Zapisano obrazek. Pominięto ${result.missingImages} niedostępnych grafik.`:'Obrazek gabloty jest gotowy do zapisania.');
+    }catch(error){toast(error.message||'Nie udało się zapisać obrazka.',true);}
+    finally{if(control?.isConnected){control.disabled=false;control.innerHTML=`${icon('arrow')} Zapisz obrazek`;}}
+  }
   function renderInventoryGrid() {
     if(!$('#inventory-grid'))return;
     const result=window.InventoryView.grid(careerContext(),inventoryFilter);
@@ -260,13 +295,13 @@
     if(next){next.focus({preventScroll:true});if(selection!==null){try{next.setSelectionRange(selection,selection);}catch{}}}
   }
   function renderUpgrader() {
-    upgradeOptions.ids=upgradeOptions.ids.filter(id=>state.inventory.some(item=>item.id===id&&!item.locked));
+    upgradeOptions.ids=upgradeOptions.ids.filter(id=>state.inventory.some(item=>item.id===id&&!protectedItem(item)));
     app.innerHTML=window.UpgraderView.render(careerContext(),upgradeOptions);
   }
   async function runUpgrade() {
     if(spinning)return;
     spinning=true;busyKind='upgrade';
-    const result=game.upgrade([...upgradeOptions.ids],upgradeOptions.target,upgradeOptions.wear);
+    const result=game.upgrade([...upgradeOptions.ids],upgradeOptions.target,upgradeOptions.wear,upgradeOptions.edition);
     if(!result.ok){spinning=false;busyKind=null;renderUpgrader();toast(result.error,true);return;}
     document.querySelectorAll('.upgrade-arena button,.upgrade-presets button,.upgrade-picker button,.upgrade-picker input,.upgrade-picker select').forEach(control=>{control.disabled=true;});
     const wheel=$('#upgrade-wheel'),needle=$('#upgrade-needle');
@@ -287,9 +322,9 @@
     sound(result.won?'win':'tap',result.item?.rarity);showUpgradeResult(result);
   }
   function chooseUpgradePreset(multiplier) {
-    const value=state.inventory.filter(item=>upgradeOptions.ids.includes(item.id)&&!item.locked).reduce((sum,item)=>sum+item.value,0);
+    const value=state.inventory.filter(item=>upgradeOptions.ids.includes(item.id)&&!protectedItem(item)).reduce((sum,item)=>sum+item.value,0);
     if(!value)return;
-    const candidates=SKINS.map(skin=>({skin,value:game.getSkinValue(skin.id,upgradeOptions.wear)})).filter(row=>row.value>=Math.ceil(value*multiplier)).sort((a,b)=>a.value-b.value);
+    const candidates=SKINS.map(skin=>({skin,value:game.getSkinValue(skin.id,upgradeOptions.wear,upgradeOptions.edition)})).filter(row=>row.value>=Math.ceil(value*multiplier)).sort((a,b)=>a.value-b.value);
     if(!candidates.length){toast('Brak celu o tej wartości w wybranym stanie. Zmień mnożnik lub zużycie.',true);return;}
     upgradeOptions.target=candidates[0].skin.id;upgradeOptions.query='';upgradeOptions.rarity='all';upgradeOptions.page=1;renderUpgrader();
   }
@@ -303,6 +338,17 @@
   }
 
   function updateTimers() {
+    if(route==='career/weekly'||route==='career'&&careerTab==='weekly'){
+      const weekly=game.getWeekly();
+      const countdown=$('#weekly-countdown');
+      if(countdown){
+        const remaining=Math.max(0,Math.ceil((weekly.endsAt-Date.now())/1000));
+        const days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60);
+        countdown.textContent=`${days} dni ${hours} godz. ${minutes} min`;
+        if(countdown.dataset.week&&countdown.dataset.week!==weekly.weekId){render();return;}
+        countdown.dataset.week=weekly.weekId;
+      }
+    }
     if (route !== 'earn') return;
     const work = game.getWorkStatus();
     if ($('#work-reward')) $('#work-reward').textContent = money(work.reward);
@@ -341,7 +387,7 @@
   }
   function showResult(item) {
     const r=RARITIES[item.rarity];
-    showModal(`<div class="result-modal" style="--rarity:${r.color}"><button class="icon-button modal-close" data-action="close-modal" aria-label="Zamknij wynik">${icon('close')}</button><p class="eyebrow">${icon(item.rarity==='rare'?'star':'check')} ${item.rarity==='rare'?'WYJĄTKOWO RZADKI DROP!':'NOWY SKIN W KOLEKCJI'}</p><h2 id="modal-title">Oto Twój drop.</h2><div class="result-art">${image(skinImage(item),item.weapon+' | '+itemName(item),'',true)}</div><p class="result-weapon">${item.stattrak?'StatTrak™ ':''}${escape(item.weapon)}</p><h3 class="result-name">${escape(itemName(item))}</h3><div class="result-tags"><span class="rarity-tag">${r.label}</span><span>${escape(item.wear)}</span>${item.noWear?'':`<span>Float ${item.float.toFixed(6)}</span>`}</div>${wearMeter(item)}<div class="result-progression">${icon(openingReward?.newDiscovery?'book':'trophy')}<span><b>${openingReward?.newDiscovery?'Nowe odkrycie w albumie':'Kolejny krok w karierze'}</b><small>Odkrycie zostaje także po sprzedaży.</small></span><strong>+${openingReward?.xpAwarded??0} XP</strong></div><div class="result-value">${money(item.value)}</div><p class="result-fee">Cena w symulatorze · Sprzedaż po prowizji ${feePercent}%: ${money(sale(item.value))}</p><div class="modal-buttons">${button(`${icon('grid')} Zachowaj`,'keep-result','','secondary')}${button(`Sprzedaj · ${money(sale(item.value))}`,'sell-result',`data-id="${escape(item.id)}"`,'green')}</div><p class="result-saved">${icon('check')} Przedmiot zapisany · Poziom ${game.getProgress().level}</p></div>`);
+    showModal(`<div class="result-modal" style="--rarity:${r.color}"><button class="icon-button modal-close" data-action="close-modal" aria-label="Zamknij wynik">${icon('close')}</button><p class="eyebrow">${icon(item.rarity==='rare'?'star':'check')} ${item.rarity==='rare'?'WYJĄTKOWO RZADKI DROP!':'NOWY SKIN W KOLEKCJI'}</p><h2 id="modal-title">Oto Twój drop.</h2><div class="result-art">${image(skinImage(item),item.weapon+' | '+itemName(item),'',true)}</div><p class="result-weapon">${editionLabel(item)}${escape(item.weapon)}</p><h3 class="result-name">${escape(itemName(item))}</h3><div class="result-tags"><span class="rarity-tag">${r.label}</span><span>${escape(item.wear)}</span>${item.noWear?'':`<span>Float ${item.float.toFixed(6)}</span>`}</div>${wearMeter(item)}${patternTags(item)}${inspectResultLink(item)}<div class="result-progression">${icon(openingReward?.newDiscovery?'book':'trophy')}<span><b>${openingReward?.newDiscovery?'Nowe odkrycie w albumie':'Kolejny krok w karierze'}</b><small>Odkrycie zostaje także po sprzedaży.</small></span><strong>+${openingReward?.xpAwarded??0} XP</strong></div><div class="result-value">${money(item.value)}</div><p class="result-fee">Cena w symulatorze · Sprzedaż po prowizji ${feePercent}%: ${money(sale(item.value))}</p><div class="modal-buttons">${button(`${icon('grid')} Zachowaj`,'keep-result','','secondary')}${button(`Sprzedaj · ${money(sale(item.value))}`,'sell-result',`data-id="${escape(item.id)}"`,'green')}</div><p class="result-saved">${icon('check')} Przedmiot zapisany · Poziom ${game.getProgress().level}</p></div>`);
   }
   function showBatchResult(result) {
     const net=result.items.reduce((sum,item)=>sum+sale(item.value),0),discoveries=result.rewards.filter(reward=>reward.newDiscovery).length;
@@ -349,7 +395,7 @@
   }
   function showUpgradeResult(result) {
     const item=result.item;
-    showModal(`<div class="result-modal upgrade-result ${result.won?'upgrade-success':'upgrade-failure'}" style="--rarity:${item?RARITIES[item.rarity].color:'#9b6371'}"><button class="icon-button modal-close" data-action="close-modal" aria-label="Zamknij wynik">${icon('close')}</button><p class="eyebrow">UPGRADER · ${percent(result.chance)} SZANSY</p><h2 id="modal-title">${result.won?'Ulepszenie udane.':'Tym razem się nie udało.'}</h2>${item?`<div class="result-art">${image(skinImage(item),item.weapon+' '+itemName(item),'',true)}</div><p class="result-weapon">${escape(item.weapon)}</p><h3 class="result-name">${escape(itemName(item))}</h3><div class="result-tags"><span>${escape(item.wear)}</span>${item.noWear?'':`<span>Float ${item.float.toFixed(6)}</span>`}</div>${wearMeter(item)}<div class="result-value">${money(item.value)}</div><p class="result-fee">Przedmiot zapisany w ekwipunku. Wkład został zużyty.</p><div class="modal-buttons">${button('Zachowaj','keep-result','','secondary')}${button(`Sprzedaj · ${money(sale(item.value))}`,'sell-result',`data-id="${escape(item.id)}"`,'green')}</div>`:`<div class="upgrade-loss-icon">${icon('upgrade')}</div><p class="modal-copy">Zużyto ${result.quantity} ${plural(result.quantity,'skin','skiny','skinów')} o łącznej wartości <strong>${money(result.inputValue)}</strong>. Wybrany cel nie trafił do ekwipunku.</p>${button('Wróć do upgradera','close-modal','','wide secondary')}`}</div>`);
+    showModal(`<div class="result-modal upgrade-result ${result.won?'upgrade-success':'upgrade-failure'}" style="--rarity:${item?RARITIES[item.rarity].color:'#9b6371'}"><button class="icon-button modal-close" data-action="close-modal" aria-label="Zamknij wynik">${icon('close')}</button><p class="eyebrow">UPGRADER · ${percent(result.chance)} SZANSY</p><h2 id="modal-title">${result.won?'Ulepszenie udane.':'Tym razem się nie udało.'}</h2>${item?`<div class="result-art">${image(skinImage(item),item.weapon+' '+itemName(item),'',true)}</div><p class="result-weapon">${escape(item.weapon)}</p><h3 class="result-name">${escape(itemName(item))}</h3><div class="result-tags"><span>${escape(item.wear)}</span>${item.noWear?'':`<span>Float ${item.float.toFixed(6)}</span>`}</div>${wearMeter(item)}${patternTags(item)}${inspectResultLink(item)}<div class="result-value">${money(item.value)}</div><p class="result-fee">Przedmiot zapisany w ekwipunku. Wkład został zużyty.</p><div class="modal-buttons">${button('Zachowaj','keep-result','','secondary')}${button(`Sprzedaj · ${money(sale(item.value))}`,'sell-result',`data-id="${escape(item.id)}"`,'green')}</div>`:`<div class="upgrade-loss-icon">${icon('upgrade')}</div><p class="modal-copy">Zużyto ${result.quantity} ${plural(result.quantity,'skin','skiny','skinów')} o łącznej wartości <strong>${money(result.inputValue)}</strong>. Wybrany cel nie trafił do ekwipunku.</p>${button('Wróć do upgradera','close-modal','','wide secondary')}`}</div>`);
   }
 
 
@@ -363,9 +409,13 @@
     if (route.startsWith('case/')) renderOpener(route.split('/')[1]);
     else if (route === 'shop') renderShop();
     else if (route === 'inventory') renderInventory();
+    else if (route === 'showcase') renderShowcase();
+    else if (route === 'skins') renderAtlas();
     else if (route === 'upgrader') renderUpgrader();
     else if (route === 'earn') renderEarn();
-    else if (route === 'career') app.innerHTML = window.CareerView.render(careerContext(), { tab: careerTab, chapter: careerChapter, collection: careerCollection });
+    else if (route === 'career'||route.startsWith('career/')) {
+      app.innerHTML=window.CareerView.render(careerContext(), {tab:careerTab,chapter:careerChapter,collection:careerCollection,history:historyOptions});
+    }
     else { route = 'cases'; renderCases(); }
     if (state.storageWarning) app.insertAdjacentHTML('afterbegin', `<p class="storage-warning" role="alert">${icon('info')} ${escape(state.storageWarning)}</p>`);
   }
@@ -389,6 +439,44 @@
     const action = target.dataset.action;
     if (spinning && !['skip-opening'].includes(action)) { toast('Poczekaj na wynik losowania.'); return; }
     switch (action) {
+      case 'atlas-page': atlasOptions.page=Number(target.dataset.page);renderAtlas();$('.atlas-results-heading')?.scrollIntoView({block:'start'});break;
+      case 'inspect-skin':
+        showInspector({skinId:target.dataset.skin,itemId:target.dataset.item,wear:target.dataset.wear || 'MW',edition:target.dataset.edition || 'regular'});break;
+      case 'inspect-phase':
+        showInspector({skinId:target.dataset.skin,wear:target.dataset.wear,edition:target.dataset.edition});break;
+      case 'inspect-seed': {
+        const raw=$('#inspect-seed')?.value, seed=Number(raw);
+        if(!raw?.trim() || !Number.isInteger(seed) || seed<0 || seed>1000){toast('Wpisz cały numer seeda od 0 do 1000.',true);break;}
+        showInspector({skinId:target.dataset.skin,wear:target.dataset.wear,edition:target.dataset.edition,seed});break;
+      }
+      case 'close-inspect': closeModal();navigate('skins');break;
+      case 'showcase-pick':
+        showcasePicker={slotId:target.dataset.slot,query:'',sort:'value_desc',page:1};
+        showModal(window.CollectionView.picker(careerContext(),showcasePicker),true);break;
+      case 'showcase-picker-page':
+        if(showcasePicker){showcasePicker.page=Number(target.dataset.page);renderShowcasePicker();content.scrollTop=0;}break;
+      case 'showcase-equip':
+      case 'showcase-remove': {
+        const result=game.setShowcaseSlot(target.dataset.slot,action==='showcase-remove'?null:target.dataset.id);
+        if(!result.ok){toast(result.error,true);break;}
+        if(action==='showcase-equip')closeModal();
+        sound('tap');toast(action==='showcase-remove'?'Miejsce w gablocie jest wolne.':'Skin umieszczony w gablocie. Jest chroniony przed sprzedażą i upgraderem.');break;
+      }
+      case 'showcase-title': {
+        const result=game.setShowcaseTitle($('#showcase-title')?.value||'');
+        if(!result.ok)toast(result.error,true);else toast('Nazwa gabloty zapisana.');break;
+      }
+      case 'showcase-theme': {
+        const result=game.setShowcaseTheme(target.dataset.theme);
+        if(!result.ok)toast(result.error,true);else sound('tap');break;
+      }
+      case 'showcase-export': exportShowcase();break;
+      case 'history-page': historyOptions.page=Number(target.dataset.page);render();$('#history-results')?.scrollIntoView({block:'start'});break;
+      case 'claim-weekly': {
+        const result=game.claimWeekly(target.dataset.id);
+        if(!result.ok){toast(result.error,true);break;}
+        sound('win');toast('Nagroda tygodniowa odebrana. Skrzynki, klucze i XP są już zapisane.');break;
+      }
       case 'skip-opening': window.OpeningView.skip(); break;
       case 'opening-count': openingCount=Number(target.dataset.count); render(); break;
       case 'pool-page': poolPage=Number(target.dataset.page); render(); $('#contents-title')?.scrollIntoView({block:'start'}); break;
@@ -411,7 +499,7 @@
       case 'scroll-catalog': $('#catalog')?.scrollIntoView({behavior:'smooth', block:'start'}); break;
       case 'clear-catalog': selectedFilter = 'all'; catalogQuery = ''; catalogOrigin='all';catalogPage = 1; render(); $('#catalog').scrollIntoView({block:'start'}); break;
       case 'catalog-page': catalogPage = Number(target.dataset.page); renderCatalogGrid(); $('#catalog').scrollIntoView({block:'start'}); break;
-      case 'career-tab': careerTab = target.dataset.tab; careerCollection = null; render(); break;
+      case 'career-tab': careerTab = target.dataset.tab; careerCollection = null;navigate('career/'+careerTab);render();break;
       case 'career-chapter': careerChapter = Number(target.dataset.chapter); render(); break;
       case 'album-open': careerCollection = target.dataset.case; render(); $('.career-tabs').scrollIntoView({block:'start'}); break;
       case 'album-back': careerCollection = null; render(); $('.career-tabs').scrollIntoView({block:'start'}); break;
@@ -434,7 +522,7 @@
         const locked = !item.locked;
         const result = game.setItemLocked(item.id, locked);
         if (!result.ok) toast(result.error, true);
-        else toast(locked ? 'Skin chroniony. Sprzedaż zbiorcza go pominie.' : 'Ochrona wyłączona. Skin można sprzedać.');
+        else toast(locked ? 'Skin chroniony. Sprzedaż zbiorcza go pominie.' : game.isItemEquipped(item.id)?'Gwiazdkę wyłączono. Skin nadal jest chroniony przez gablotę.':'Ochrona wyłączona. Skin można sprzedać.');
         break;
       }
       case 'favorites-filter': inventoryFilter.favorites = !inventoryFilter.favorites; inventoryFilter.page = 1; renderInventory(); break;
@@ -459,11 +547,11 @@
         sound('buy'); toast(`Przedmiot sprzedany. +${money(result.total)}`); break;
       }
       case 'sell-filtered': {
-        const items = filteredInventory().filter(item => !item.locked);
+        const items = filteredInventory().filter(item => !protectedItem(item));
         if (!items.length) return;
         const ids = items.map(item => item.id);
         const net = items.reduce((sum, item) => sum + sale(item.value), 0);
-        showModal(`<div class="modal-body">${modalTop('Sprzedać wybrane przedmioty?')}<p class="modal-copy">Sprzedasz niechronione przedmioty pasujące do obecnych filtrów: <strong>${items.length} szt.</strong> Otrzymasz <strong>${money(net)}</strong> po prowizji ${feePercent}%.</p><p class="modal-copy">Odkrycia zostają w albumie. Przedmioty oznaczone gwiazdką zachowasz.</p><div class="modal-buttons">${button('Zachowaj kolekcję', 'close-modal', '', 'secondary')}${button(`Sprzedaj · ${money(net)}`, 'confirm-sell', '', 'green')}</div></div>`);
+        showModal(`<div class="modal-body">${modalTop('Sprzedać wybrane przedmioty?')}<p class="modal-copy">Sprzedasz niechronione przedmioty pasujące do obecnych filtrów: <strong>${items.length} szt.</strong> Otrzymasz <strong>${money(net)}</strong> po prowizji ${feePercent}%.</p><p class="modal-copy">Odkrycia zostają w albumie. Przedmioty oznaczone gwiazdką i umieszczone w gablocie zachowasz.</p><div class="modal-buttons">${button('Zachowaj kolekcję', 'close-modal', '', 'secondary')}${button(`Sprzedaj · ${money(net)}`, 'confirm-sell', '', 'green')}</div></div>`);
         $('[data-action="confirm-sell"]', content).onclick = () => {
           const result = game.sellItems(ids);
           closeModal();
@@ -499,6 +587,9 @@
 
   document.addEventListener('input', event => {
     if(spinning)return;
+    if(event.target.id==='atlas-search'){atlasOptions.query=event.target.value;atlasOptions.page=1;preserveInput(renderAtlas);}
+    if(event.target.id==='showcase-search'&&showcasePicker){showcasePicker.query=event.target.value;showcasePicker.page=1;preserveInput(renderShowcasePicker);}
+    if(event.target.id==='history-search'){historyOptions.query=event.target.value;historyOptions.page=1;preserveInput(render);}
     if(event.target.id==='pool-search'){poolQuery=event.target.value;poolPage=1;preserveInput(()=>renderOpener(route.split('/')[1]));}
     if(event.target.id==='upgrade-input-search'){upgradeOptions.inputQuery=event.target.value;upgradeOptions.inputPage=1;preserveInput(renderUpgrader);}
     if(event.target.id==='upgrade-target-search'){upgradeOptions.query=event.target.value;upgradeOptions.page=1;preserveInput(renderUpgrader);}
@@ -512,9 +603,15 @@
   });
   document.addEventListener('change', event => {
     if(spinning)return;
+    if(event.target.id.startsWith('atlas-') && Object.hasOwn(atlasOptions,event.target.id.slice(6))){atlasOptions[event.target.id.slice(6)]=event.target.value;atlasOptions.page=1;preserveInput(renderAtlas);}
+    if(event.target.id==='showcase-sort'&&showcasePicker){showcasePicker.sort=event.target.value;showcasePicker.page=1;renderShowcasePicker();}
+    if(event.target.id==='history-type'){historyOptions.type=event.target.value;historyOptions.page=1;preserveInput(render);}
+    if(event.target.id==='history-rarity'){historyOptions.rarity=event.target.value;historyOptions.page=1;preserveInput(render);}
+    if(event.target.id==='history-sort'){historyOptions.sort=event.target.value;historyOptions.page=1;preserveInput(render);}
     if(event.target.id==='pool-rarity'){poolRarity=event.target.value;poolPage=1;preserveInput(()=>renderOpener(route.split('/')[1]));}
     if(event.target.id==='pool-wear'){poolWear=event.target.value;poolPage=1;preserveInput(()=>renderOpener(route.split('/')[1]));}
     if(event.target.id==='upgrade-wear'){upgradeOptions.wear=event.target.value;upgradeOptions.page=1;renderUpgrader();}
+    if(event.target.id==='upgrade-edition'){upgradeOptions.edition=event.target.value;upgradeOptions.page=1;renderUpgrader();}
     if(event.target.id==='upgrade-rarity'){upgradeOptions.rarity=event.target.value;upgradeOptions.page=1;renderUpgrader();}
     if(event.target.id==='upgrade-input-sort'){upgradeOptions.inputSort=event.target.value;upgradeOptions.inputPage=1;renderUpgrader();}
     if(event.target.id==='upgrade-target-sort'){upgradeOptions.targetSort=event.target.value;upgradeOptions.page=1;renderUpgrader();}
@@ -529,6 +626,7 @@
   });
   $('#sound-toggle').addEventListener('click', () => { game.setSetting('sound', !state.settings.sound); sound('tap'); });
   modal.addEventListener('close', () => {
+    showcasePicker=null;inspectOptions=null;
     if (resultItem) { resultItem = null;lastBatch=null;render(); }
     previousFocus?.isConnected && previousFocus.focus({ preventScroll: true });
   });
@@ -538,7 +636,8 @@
     if (spinning) { history.replaceState(null, '', lastHash); return; }
     const requested = location.hash.slice(1) || 'cases';
     if(requested.startsWith('case/')&&requested!==route){poolQuery='';poolRarity='all';poolWear='all';poolPage=1;}
-    route = ['cases', 'shop', 'inventory', 'upgrader', 'earn', 'career'].includes(requested) || (requested.startsWith('case/') && caseById(requested.split('/')[1])) ? requested : 'cases';
+    route = ['cases', 'shop', 'inventory', 'showcase', 'skins', 'upgrader', 'earn', 'career'].includes(requested) || (requested.startsWith('case/') && caseById(requested.split('/')[1])) || (requested.startsWith('career/')&&['missions','collections','weekly','history'].includes(requested.split('/')[1])) ? requested : 'cases';
+    if(route.startsWith('career/'))careerTab=route.split('/')[1];
     lastHash = `#${route}`;
     paintHeader(); render();
     if (scrollToCatalogOnRoute && route === 'cases') {
