@@ -1,54 +1,74 @@
-# SKINLAB — Case Opener Simulator
+# SKINLAB — Case Opener Simulator v3
 
-Przeglądarkowy symulator skrzynek CS2 z kampanią kolekcjonera, odblokowywaniem skrzynek i trwałym albumem odkrytych skinów. Wszystkie kwoty są wirtualne. Ceny są zapisanym punktem odniesienia dla ekonomii gry, a nie bieżącą ofertą kupna lub sprzedaży. Gra nie łączy się z kontem Steam i nie pozwala wypłacać pieniędzy.
+Przeglądarkowy symulator skrzynek CS2 z kolekcjonowaniem skinów, kampanią i upgraderem. Gra działa lokalnie, bez konta Steam i bez instalowania bibliotek. Wszystkie pieniądze i przedmioty są wirtualne.
 
-## Uruchomienie lokalne
+## Uruchomienie
 
-**Najprościej:** otwórz `index.html` w przeglądarce. Zachowaj cały folder projektu. Skrypty, grafiki i fonty są lokalne, więc po rozpakowaniu gra działa również bez internetu. Nie potrzeba instalowania bibliotek ani budowania aplikacji.
+Otwórz `index.html` w przeglądarce. Zachowaj cały folder projektu: grafiki, skrypty i fonty są lokalne, więc gra działa również bez internetu.
 
-**Alternatywa — serwer lokalny:** jeżeli przeglądarka ogranicza zapis plików otwieranych dwuklikiem, uruchom w folderze projektu:
+Jeżeli przeglądarka ogranicza zapis plików otwieranych dwuklikiem, uruchom w folderze projektu:
 
 ```powershell
 node serve.cjs
 ```
 
-Otwórz [http://127.0.0.1:4173](http://127.0.0.1:4173). Serwer wymaga Node.js i działa wyłącznie na Twoim komputerze. Zatrzymasz go skrótem `Ctrl+C` w terminalu.
+Otwórz [http://127.0.0.1:4173](http://127.0.0.1:4173). Serwer wymaga Node.js; zatrzymasz go skrótem `Ctrl+C`. Uruchamiaj tylko jeden serwer na tym porcie.
 
-Zamiast Node.js możesz użyć Pythona:
+Alternatywa z Pythonem:
 
 ```powershell
 python -m http.server 4173 --bind 127.0.0.1
 ```
 
-Uruchom tylko jeden serwer na wybranym porcie.
+## Katalog
 
-## Cel gry i postęp
+W wersji 3 jest **60 skrzynek i kolekcji do otwierania**:
 
-Zaczynasz ze **$100**, pierwszym poziomem kolekcjonera i dostępem do początkowych skrzynek. Twoim celem jest realizacja kampanii, odblokowanie katalogu i uzupełnianie albumów kolekcji.
+- **42 oficjalne skrzynki na broń**: wszystkie pozycje typu `Case` z manifestu CSGO-API sprawdzonego 4 listopada 2026, w tym Gallery, Fever, Kilowatt, wszystkie serie Chroma, Gamma, Spectrum i klasyczne skrzynki operacji. Każda ma pełną pulę zwykłych i specjalnych przedmiotów z manifestu.
+- **16 autorskich skrzynek SKINLAB**: między innymi Budget Run, Blue Circuit, Purple Pulse, Pink Rush, AK-47 Vault, M4 Arsenal, Sniper Nest, Doppler Lab, Glove Atelier i Knife Archive. Mają własne, jawne szanse dla konkretnych przedmiotów.
+- **2 symulacje kolekcji terminali**: Genesis Terminal i Dead Hand Terminal. Korzystają z mechaniki skrzynki i pasującego klucza oraz własnych tabel losowania. Nie odtwarzają ofert ani procesu wyboru rzeczywistych terminali Valve.
 
-- **Otwieranie daje 25 XP**, a odkrycie nowego skina dodatkowo **10 XP**. Odkrycie liczy się raz dla danego skina; inny stan zużycia lub StatTrak nie tworzy kolejnego odkrycia.
-- Kolejne poziomy odblokowują nowe grupy skrzynek. Katalog pokazuje wymagany poziom również dla zablokowanych pozycji.
-- **Kampania ma 18 jednorazowych zadań w sześciu rozdziałach** z nagrodami w gotówce i XP. Po wykonaniu zadania odbierz jego nagrodę w panelu postępu. Następny rozdział otwiera się po odebraniu trzech nagród z poprzedniego.
-- Każda skrzynka ma osobny album. **Komplet zwykłych skinów** odblokowuje jednorazową nagrodę za kolekcję. Noże i rękawice są dodatkowymi odkryciami, więc nie trzeba zdobywać wyjątkowo rzadkiego przedmiotu, aby ukończyć album.
-- Odkrycia pozostają w albumie po sprzedaży przedmiotu. Możesz więc sprzedawać duplikaty i zachowywać ulubione egzemplarze.
-- Kupowanie, sprzedawanie, praca i bonus dzienny nie dają XP. Obracanie tym samym przedmiotem nie przyspiesza odblokowań.
+Pełny katalog skinów zawiera **2126 pozycji**, w tym oddzielne fazy Doppler/Gamma Doppler, noże, rękawice i skiny spoza skrzynek, dostępne także jako cele upgradera. To **1974 wykończenia po połączeniu faz** i **9305 kombinacji skin–stan**, bez liczenia dodatkowych egzemplarzy StatTrak. Wyszukiwanie i filtry pomagają poruszać się po katalogu. Zakres nie obejmuje naklejek, agentów, pakietów pamiątkowych i innych pojemników niebędących skrzynkami na broń.
 
-Finałowy cel wymaga **20. poziomu, 500 otwarć, 180 odkrytych skinów i otwarcia 18 różnych skrzynek**. Po ukończeniu kampanii można dalej kompletować albumy, szukać rzadkich egzemplarzy i budować kolekcję.
+## Otwieranie i ekwipunek
 
-## Skrzynki, klucze i ekonomia
+1. Kup skrzynkę oraz **osobno pasujący klucz**. Ekwipunek pokazuje zakładki wszystkich przedmiotów, skinów, skrzynek i kluczy, wraz z ich ilościami.
+2. Wybierz **1, 2, 3 lub 5 otwarć**. Każdy wynik jest niezależny. Potrzebujesz tylu skrzynek i pasujących kluczy, ile wynosi wybrana liczba.
+3. Obejrzyj przewijające się taśmy z zaznaczonym punktem zatrzymania. Możesz włączyć szybkie otwieranie albo pominąć trwającą animację; nie losuje to ponownie nagrody.
+4. Zachowaj drop albo sprzedaj go za **90% wyświetlanej wartości**. Prowizja wynosi 10%; wypłata jest zaokrąglana w dół do centa osobno dla każdego przedmiotu.
+5. Oznacz ulubione skiny gwiazdką, aby chronić je przed sprzedażą i użyciem w upgraderze.
 
-W katalogu są **24 skrzynki i 666 unikalnych skinów** z pełnymi pulami zwykłych skinów oraz wyborem noży lub rękawic, w tym Dreams & Nightmares, Kilowatt, Revolution i klasyczne skrzynki CS:GO. Filtry pomagają znaleźć skrzynkę według nazwy, ceny i dostępności.
+Brak części zasobów albo miejsca w ekwipunku odrzuca całe otwarcie zbiorcze. Gra nie zużywa wtedy części kluczy. Wszystkie wyniki i zużycie zasobów zapisują się przed animacją.
 
-1. Kup wybraną skrzynkę oraz **osobno pasujący klucz**. Klucz do innej skrzynki nie zadziała.
-2. Otwórz skrzynkę. Oba przedmioty zostaną zużyte, a drop trafi do ekwipunku i albumu odkryć.
-3. Zachowaj skin albo sprzedaj go za **90% jego wyświetlanej wartości**. Prowizja wynosi 10%, a wypłata jest zaokrąglana w dół do centa dla każdego przedmiotu.
-4. Zabezpiecz ulubiony egzemplarz przed sprzedażą. Blokada obowiązuje również przy sprzedaży zbiorczej.
+Każdy skin ma właściwy zakres float i dozwolone stany: **Factory New, Minimal Wear, Field-Tested, Well-Worn albo Battle-Scarred**. Nie każdy skin istnieje we wszystkich stanach. Noże Vanilla mają oznaczenie **Bez zużycia**, bez udawania stanu FN. Zużycie, float, faza i StatTrak są zachowywane w zapisie. Ekwipunek ma również filtr stanu.
 
-Ceny różnią się między skinami i stanami zużycia. Ten sam skin w tym samym stanie ma spójną wycenę niezależnie od skrzynki. Cena otwarcia uwzględnia koszt skrzynki, klucza oraz balans ekonomii. Otwieranie i natychmiastowa sprzedaż mają ujemny oczekiwany wynik; pojedynczy wartościowy drop może jednak przynieść zysk. Szczegóły pomiaru opisuje `BALANCE.md`.
+## Upgrader
 
-Na dalszą grę zarabiasz w panelu pracy: **$0,10–$0,18 za akcję**, z odstępem jednej sekundy i krótką serią kolejnych prac. Bonus dzienny wynosi **$2,50** i można odebrać go raz na lokalny dzień kalendarzowy. Nagrody z kampanii i kolekcji są jednorazowe, dlatego nie tworzą nieskończonej pętli zarabiania.
+Wybierz **od 1 do 5 niezablokowanych skinów**, następnie docelowy skin i jego dostępny stan. Panel przed próbą pokazuje wartość wkładu, wartość celu i szansę powodzenia.
 
-## Szanse losowania
+- Cel musi być wart co najmniej **105% sumy wkładu**.
+- Szansa wynosi `min(75%, wartość wkładu / wartość celu × 90%)`.
+- Wkład $10 i cel $20 dają **45% szansy**.
+- **Wybrane skiny są zużywane zarówno po sukcesie, jak i po porażce.** Sukces daje jeden egzemplarz wybranego celu, dokładnie w wybranym stanie i po podanej cenie. Porażka nie zwraca wkładu.
+- Nagroda nie otrzymuje StatTrak ani losowego modyfikatora ceny. Float jest losowany we wspólnej części zakresu skina i wybranego stanu.
+
+Upgrader zapisuje nowe odkrycia w albumie, ale **nie przyznaje XP** i nie zwiększa licznika otwarć ani odwiedzonych skrzynek. Dzięki temu ulepszanie tanich skinów nie służy do omijania poziomów. Wynik zapisuje się przed animacją; ponowne kliknięcie albo druga karta nie mogą drugi raz zużyć tego samego egzemplarza.
+
+## Cel gry
+
+Zaczynasz ze **$100** i pierwszym poziomem kolekcjonera. Standardowe otwarcie daje **25 XP**, a pierwsze odkrycie dodatkowo **10 XP**. **Otwarcia tańsze niż $2,49 dają proporcjonalnie mniej XP**. Budget Run za $0,25 daje 2 XP i 1 XP za nowe odkrycie. Wartość XP jest podana przy skrzynce. Kolejny stan lub StatTrak nie daje ponownie nagrody odkrycia; odrębna faza Doppler jest odrębnym odkryciem.
+
+Kampania ma **18 jednorazowych zadań w sześciu rozdziałach**, z nagrodami w gotówce i XP. Następny rozdział otwiera się po odebraniu nagród poprzedniego. Poziomy odblokowują dalsze skrzynki i customy.
+
+Finał wymaga **20. poziomu, 500 otwarć, 180 odkryć i odwiedzenia 18 różnych skrzynek**. Nie wymaga trafienia noża. Po zakończeniu można dalej kompletować albumy i kolekcjonować egzemplarze.
+
+Oficjalny album wymaga wszystkich zwykłych skinów; noże i rękawice są dodatkowymi odkryciami. **Autorski album wymaga wszystkich przedmiotów swojej puli**, także złotych, jeśli je zawiera. Odkrycia pozostają po sprzedaży i zużyciu skina. Nagrody albumów odbiera się tylko raz.
+
+Praca daje **$0,10–$0,18 na akcję**, z sekundą odstępu i premią za serię. Bonus dzienny wynosi **$2,50**, raz na lokalny dzień kalendarzowy. Kupowanie, sprzedaż, praca i bonus nie dają XP.
+
+## Szanse i ceny
+
+Standardowe szanse koloru dla oficjalnych skrzynek:
 
 | Rzadkość | Szansa |
 | --- | ---: |
@@ -58,31 +78,28 @@ Na dalszą grę zarabiasz w panelu pracy: **$0,10–$0,18 za akcję**, z odstęp
 | Covert / czerwony | 0,64% |
 | Special Rare / złoty | 0,26% |
 
-Szanse sumują się do 100%. Losowania są niezależne: wcześniejsze wyniki nie zwiększają szansy na rzadki przedmiot. W obrębie rzadkości skiny z danej skrzynki są wybierane równomiernie. Stan i float mieszczą się w zakresie przypisanym do skina. Rękawice i Zeus x27 nie otrzymują StatTrak.
+Suma wynosi 100%. W obrębie koloru symulator wybiera równomiernie spośród pozycji jego puli, w tym oddzielnych faz. To reguły symulacji; nie deklarujemy dokładnego odtworzenia szans każdej fazy w CS2. **Customy i symulacje terminali korzystają z własnych wag przedmiotów**, widocznych przy zawartości. Powyższa tabela nie dotyczy ich pul. Losowania są niezależne, bez zwiększania szansy po serii porażek.
 
-## Zapis i aktualizacja poprzedniej wersji
+Ceny bazują na stałej migawce Skinport z **3 listopada 2026**, oddzielnie dla stanów i faz. Cztery brakujące notowania są oznaczonymi szacunkami: MP5-SD Lab Rats FN/MW/FT i Negev Mjölnir WW. To wartości do rozgrywki, nie aktualne oferty. Drop ma dodatkowy rozrzut wartości ±4%, a dozwolony StatTrak stosuje premię ×1,3. Identyczny wariant ma wspólną wycenę niezależnie od skrzynki.
 
-Gotówka, zakupione skrzynki i klucze, ekwipunek, albumy, XP, odebrane nagrody, ustawienia i statystyki zapisują się automatycznie w `localStorage`. Drop jest zapisany przed końcem animacji, więc odświeżenie strony podczas otwierania nie odbiera nagrody.
+Otwarcia i upgrader mają ujemną wartość oczekiwaną. Pojedynczy drogi drop może dać zysk, ale wielokrotna odsprzedaż nie tworzy stałej pętli zarabiania. Custom samych noży ma odpowiednio wysoki koszt. Szczegóły i kontrola ekonomii: `BALANCE.md`.
 
-Poprzedni zapis jest wykrywany automatycznie. Poprawna gotówka, przedmioty i zakupione zasoby są zachowywane; wycena skinów zostaje dostosowana do nowej ekonomii. Migracja nie wymaga resetowania gry. Zakupione wcześniej skrzynki pozostają dostępne również wtedy, gdy wymagają teraz wyższego poziomu. Przy uszkodzonych danych poprawne części zapisu są zachowywane w miarę możliwości, a interfejs wyświetla ostrzeżenie.
+## Zapis i aktualizacja
 
-Zapis należy do konkretnej przeglądarki i adresu strony. Plik otwarty dwuklikiem, `localhost` oraz `127.0.0.1` mogą korzystać z osobnych zapisów. Tryb prywatny, usunięcie danych witryny i reset gry usuwają postęp. Nie ma konta, synchronizacji ani zapisu na serwerze. Gdy przeglądarka blokuje zapis, gra informuje o tym w interfejsie.
+Gotówka, klucze, skrzynki, skiny, albumy, ulubione, kariera, statystyki i ostatni wynik upgradera zapisują się automatycznie w `localStorage`. Stare zapisy wersji 1 i 2 są wykrywane automatycznie. **Wersja 2 zachowuje ceny i identyfikatory posiadanych egzemplarzy, zasoby, XP i odebrane nagrody**. Wersja 1 otrzymuje ceny nowej ekonomii i odzyskuje odkrycia z zachowanych przedmiotów.
 
-## Pliki projektu
+Zapis należy do konkretnej przeglądarki i adresu. Plik otwierany dwuklikiem, `localhost` i `127.0.0.1` mogą mieć osobne zapisy. Usunięcie danych witryny, tryb prywatny lub reset mogą usunąć postęp. Gra informuje o niedostępnym zapisie. Nie ma konta ani synchronizacji z serwerem.
 
-- `index.html` — struktura strony i widoki.
-- `style.css` — wygląd, responsywność i animacje.
-- `script.js` — interfejs, roller i dźwięki.
-- `catalog.js` — katalog skrzynek, skinów i wycen.
-- `career-view.js` — widoki kampanii i albumu kolekcji.
-- `game.js` — ekonomia, losowanie, kampania, kolekcje oraz trwały stan gry.
-- `image-map.js` i `assets/` — lokalne grafiki oraz fonty.
-- `CREDITS.md` — źródła grafik, danych i informacje o prawach do materiałów.
-- `BALANCE.md` — założenia i wyniki kontroli ekonomii.
-- `serve.cjs` — opcjonalny serwer bez zewnętrznych zależności.
-- `tests/` — testy logiki, ekonomii, migracji i lokalnych zasobów.
+## Pliki i testy
 
-## Testy
+- `index.html`, `style.css`, `script.js` — interfejs, responsywność, dźwięki i animacje.
+- `game.js` — stan, ekonomia, losowanie, otwarcia zbiorcze, upgrader i kariera.
+- `catalog.js` — skrzynki, skiny, ceny stanów i jawne tabele dropów.
+- `career-view.js`, `opening-view.js`, `inventory-view.js`, `upgrader-view.js` — widoki kariery, otwierania, ekwipunku i upgradera.
+- `image-map.js`, `assets/` — lokalne grafiki, fonty i migawka cen.
+- `CREDITS.md`, `BALANCE.md` — źródła danych i zasady ekonomii.
+- `serve.cjs` — opcjonalny serwer lokalny bez zależności.
+- `tests/` — kontrole logiki, balansu, migracji i zasobów offline.
 
 W folderze projektu uruchom:
 
@@ -90,7 +107,8 @@ W folderze projektu uruchom:
 node --test tests/*.test.cjs
 ```
 
-Testy wymagają Node.js. Gra korzysta z czystego HTML, CSS i JavaScript; nie jest wymagany menedżer pakietów.
+Testy sprawdzają pełne pule 42 oficjalnych skrzynek względem niezależnej migawki manifestu, granice losowania customów, zakresy zużycia, ceny, zbiorcze otwarcia, upgrader, migracje, dwie karty, ograniczenia XP i pełne przejście kampanii. Nie potrzeba menedżera pakietów ani etapu budowania aplikacji.
 
-Projekt fanowski, niezwiązany z Valve. Nazwy CS2, skrzynek i skinów należą do ich właścicieli.
+Testy kontrolera wykonują rzeczywiste zdarzenia zakupów, otwierania, filtrów i upgradera w środowisku Node z zastąpionymi animacjami. Weryfikują powiązanie widoków z zapisem gry; nie zastępują sprawdzenia wyglądu i płynności w przeglądarce.
 
+Projekt fanowski, niezwiązany z Valve. CS2, Steam, nazwy i grafiki przedmiotów należą do ich właścicieli.

@@ -12,6 +12,9 @@
   <script defer src="catalog.js"></script>
   <script defer src="game.js"></script>
   <script defer src="career-view.js"></script>
+  <script defer src="opening-view.js"></script>
+  <script defer src="inventory-view.js"></script>
+  <script defer src="upgrader-view.js"></script>
   <script defer src="script.js"></script>
 </head>
 <body>
@@ -38,6 +41,8 @@
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C8 2 3 3 3 3v16s5-1 9 2c4-3 9-2 9-2V3s-5-1-9 2Zm0 0v16"/></symbol>
+    <symbol id="i-upgrade" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6m2 7V8m-3 3 3-3 3 3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   </defs></svg>
   <a class="skip-link" href="#main">Przejdź do treści</a>
   <header class="header">
@@ -47,6 +52,7 @@
         <a href="#cases" data-nav="cases"><svg class="icon"><use href="#i-box"/></svg><span>Skrzynki</span></a>
         <a href="#shop" data-nav="shop"><svg class="icon"><use href="#i-bag"/></svg><span>Sklep</span></a>
         <a href="#inventory" data-nav="inventory"><svg class="icon"><use href="#i-grid"/></svg><span>Ekwipunek</span><b id="inventory-count" class="nav-count" hidden>0</b></a>
+        <a href="#upgrader" data-nav="upgrader"><svg class="icon"><use href="#i-upgrade"/></svg><span>Upgrader</span></a>
         <a href="#career" data-nav="career"><svg class="icon"><use href="#i-trophy"/></svg><span>Kariera</span><b id="career-count" class="nav-count reward-count" hidden>0</b></a>
         <a href="#earn" data-nav="earn"><svg class="icon"><use href="#i-bolt"/></svg><span>Zarabiaj</span></a>
       </nav>

@@ -16,41 +16,94 @@
   const MAX_MONEY = 999999999999;
   const MAX_COUNT = 1000000;
   const MAX_INVENTORY = 10000;
+  const OPEN_QUANTITIES = [1, 2, 3, 5];
+  const UPGRADE_HOUSE_EDGE = 0.10;
+  const UPGRADE_MAX_CHANCE = 0.75;
   const RARITIES = {
+    consumer: { id: "consumer", label: "Consumer", color: "#b0bdcb", chance: 0, weight: 0, rank: -2 },
+    industrial: { id: "industrial", label: "Industrial", color: "#7baecb", chance: 0, weight: 0, rank: -1 },
     milspec: { id: "milspec", label: "Mil-Spec", color: "#4b69ff", chance: 79.92, weight: 79920, rank: 0 },
     restricted: { id: "restricted", label: "Restricted", color: "#8847ff", chance: 15.98, weight: 15980, rank: 1 },
     classified: { id: "classified", label: "Classified", color: "#d32ce6", chance: 3.2, weight: 3200, rank: 2 },
     covert: { id: "covert", label: "Covert", color: "#eb4b4b", chance: 0.64, weight: 640, rank: 3 },
-    rare: { id: "rare", label: "Special Rare", color: "#e4ae39", chance: 0.26, weight: 260, rank: 4 }
+    rare: { id: "rare", label: "Special Rare", color: "#e4ae39", chance: 0.26, weight: 260, rank: 4 },
+    contraband: { id: "contraband", label: "Contraband", color: "#e4ae39", chance: 0, weight: 0, rank: 5 }
   };
   const WEARS = [
     { code: "FN", label: "Factory New", min: 0, max: 0.07, multiplier: 1.4 },
     { code: "MW", label: "Minimal Wear", min: 0.07, max: 0.15, multiplier: 1 },
     { code: "FT", label: "Field-Tested", min: 0.15, max: 0.38, multiplier: 0.72 },
     { code: "WW", label: "Well-Worn", min: 0.38, max: 0.45, multiplier: 0.58 },
-    { code: "BS", label: "Battle-Scarred", min: 0.45, max: 1.000001, multiplier: 0.44 }
+    { code: "BS", label: "Battle-Scarred", min: 0.45, max: 1.000001, multiplier: 0.44 },
+    { code: "NW", label: "Bez zużycia", min: 0, max: 1, multiplier: 1 }
   ];
 
   if (!catalog || !Array.isArray(catalog.CASES)) throw new Error("Najpierw załaduj katalog skrzynek (catalog.js).");
   const CASES = clone(catalog.CASES);
 
   const palettes = {
+    consumer: ["#b0bdcb", "#384554"], industrial: ["#7baecb", "#284253"],
     milspec: ["#7ea4dc", "#263a62"], restricted: ["#ac8de4", "#453465"],
-    classified: ["#f28ed9", "#733c7e"], covert: ["#ef9278", "#792e3b"], rare: ["#f7d88a", "#9f6930"]
+    classified: ["#f28ed9", "#733c7e"], covert: ["#ef9278", "#792e3b"], rare: ["#f7d88a", "#9f6930"], contraband: ["#f7d88a", "#9f6930"]
   };
   const caseIndex = Object.create(null);
   const skinIndex = Object.create(null);
+  const canonicalIndex = Object.create(null);
+  function decorateSkin(entry, id, caseId) {
+    entry.id = id;
+    entry.caseId = caseId;
+    entry.palette = (palettes[entry.rarity] || palettes.milspec).slice();
+    entry.art = /Gloves|Wraps/.test(entry.weapon) ? "gloves" : /★/.test(entry.weapon) || entry.rarity === "rare" ? "knife" :
+      /AWP|SSG|SCAR|G3SG/.test(entry.weapon) ? "sniper" : /AK-|M4|AUG|SG |FAMAS/.test(entry.weapon) ? "rifle" :
+      /Nova|MAG|XM|Sawed/.test(entry.weapon) ? "shotgun" : /MAC|MP|PP-|P90/.test(entry.weapon) ? "smg" : "pistol";
+    return entry;
+  }
+  for (const raw of catalog.ALL_SKINS || []) {
+    const entry = clone(raw);
+    const id = entry.sourceId || entry.id;
+    if (typeof id === "string" && !canonicalIndex[id]) canonicalIndex[id] = decorateSkin(entry, id, "catalog");
+  }
   for (const box of CASES) {
     caseIndex[box.id] = box;
     box.skins.forEach((entry, index) => {
-      entry.id = `${box.id}-${index + 1}`;
-      entry.caseId = box.id;
-      entry.palette = palettes[entry.rarity].slice();
-      entry.art = /Gloves|Wraps/.test(entry.weapon) ? "gloves" : /★/.test(entry.weapon) ? "knife" :
-        /AWP|SSG|SCAR|G3SG/.test(entry.weapon) ? "sniper" : /AK-|M4|AUG|SG |FAMAS/.test(entry.weapon) ? "rifle" :
-        /Nova|MAG|XM|Sawed/.test(entry.weapon) ? "shotgun" : /MAC|MP|PP-|P90/.test(entry.weapon) ? "smg" : "pistol";
+      decorateSkin(entry, `${box.id}-${index + 1}`, box.id);
       skinIndex[entry.id] = entry;
+      const canonicalId = entry.sourceId || entry.id;
+      if (!canonicalIndex[canonicalId]) canonicalIndex[canonicalId] = decorateSkin(clone(entry), canonicalId, "catalog");
     });
+  }
+  const SKINS = Object.values(canonicalIndex);
+  for (const entry of SKINS) skinIndex[entry.id] = entry;
+
+  // Official cases share rarity odds. Curated cases declare exact per-item weights.
+  // Both the visible percentages and the random draw use this same normalized table.
+  const dropTables = Object.create(null);
+  for (const box of CASES) {
+    let entries;
+    if (Array.isArray(box.dropTable)) {
+      entries = box.dropTable.map(row => {
+        const source = Number.isSafeInteger(row.index) ? box.skins[row.index] : box.skins.find(skin => skin.id === row.skinId || skin.sourceId === row.skinId);
+        return source && Number.isFinite(row.weight) && row.weight > 0 ? { skinId: source.id, weight: row.weight, rarity: source.rarity } : null;
+      }).filter(Boolean);
+    } else if (box.skins.some(source => Number.isFinite(source.dropWeight) && source.dropWeight > 0)) {
+      entries = box.skins.filter(source => Number.isFinite(source.dropWeight) && source.dropWeight > 0)
+        .map(source => ({ skinId: source.id, weight: source.dropWeight, rarity: source.rarity }));
+    } else {
+      const available = Object.values(RARITIES).filter(rarity => rarity.weight > 0 && box.skins.some(skin => skin.rarity === rarity.id));
+      entries = available.flatMap(rarity => {
+        const pool = box.skins.filter(source => source.rarity === rarity.id);
+        return pool.map(source => ({ skinId: source.id, weight: rarity.weight / pool.length, rarity: source.rarity }));
+      });
+    }
+    if (!entries.length) throw new Error(`Skrzynka ${box.id} nie ma poprawnej tabeli dropów.`);
+    const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+    dropTables[box.id] = entries.map(entry => ({ ...entry, chance: entry.weight / total }));
+  }
+  function getDropChances(caseId) { return dropTables[caseId] ? clone(dropTables[caseId]) : []; }
+  function getRarityChances(caseId) {
+    const chances = Object.fromEntries(Object.keys(RARITIES).map(id => [id, 0]));
+    for (const entry of dropTables[caseId] || []) chances[entry.rarity] += entry.chance;
+    return chances;
   }
 
   function freezeDeep(value) {
@@ -61,12 +114,21 @@
     return value;
   }
   freezeDeep(CASES);
+  freezeDeep(SKINS);
+  freezeDeep(dropTables);
+  freezeDeep(OPEN_QUANTITIES);
   freezeDeep(RARITIES);
   freezeDeep(WEARS);
 
   const MAX_LEVEL = 20;
   const OPEN_XP = 25;
   const DISCOVERY_XP = 10;
+  function getOpeningXP(caseId) {
+    const box = caseIndex[caseId];
+    if (!box) return { openXP: 0, discoveryXP: 0 };
+    const scale = Math.min(1, (box.price + box.keyPrice) / 249);
+    return { openXP: Math.max(1, Math.floor(OPEN_XP * scale)), discoveryXP: Math.max(1, Math.floor(DISCOVERY_XP * scale)) };
+  }
   const RANKS = ["Rekrut", "Poszukiwacz", "Kolekcjoner", "Specjalista", "Ekspert", "Kurator"];
   const MISSIONS = [
     ["first-open", 1, "Pierwsza skrzynka", "Otwórz swoją pierwszą skrzynkę.", "opens", 1, 200, 25],
@@ -91,7 +153,7 @@
   freezeDeep(MISSIONS);
 
   // A finish is one weapon + paint, regardless of wear, StatTrak or source case.
-  function finishKey(source) { return `${source.weapon}|${source.name}`; }
+  function finishKey(source) { return `${source.weapon}|${source.name}|${source.phase || ""}`; }
   function countDiscoveries(discovered) {
     return new Set(Object.keys(discovered).filter(id => discovered[id] && skinIndex[id]).map(id => finishKey(skinIndex[id]))).size;
   }
@@ -100,6 +162,17 @@
     const anchor = source.wearValues && integer(source.wearValues[wear.code]) && source.wearValues[wear.code] > 0 ?
       source.wearValues[wear.code] : source.baseValue * wear.multiplier;
     return Math.max(1, Math.round(anchor * variation * (stattrak ? 1.3 : 1)));
+  }
+  function supportsStatTrak(source) { return source.stattrak !== false && source.art !== "gloves" && source.weapon !== "Zeus x27"; }
+  function availableWear(source, code) {
+    const wear = WEARS.find(entry => entry.code === code);
+    if (!wear || Boolean(source.noWear) !== (code === "NW")) return null;
+    if (!source.noWear && (source.maxFloat <= wear.min || source.minFloat >= wear.max)) return null;
+    if (source.wearValues && (!integer(source.wearValues[code]) || source.wearValues[code] < 1)) return null;
+    return wear;
+  }
+  function wearAt(source, wearFloat) {
+    return source.noWear ? WEARS.find(wear => wear.code === "NW") : WEARS.find(wear => wear.code !== "NW" && wearFloat >= wear.min && wearFloat < wear.max);
   }
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -113,11 +186,11 @@
   function emptyCounts() { return Object.fromEntries(CASES.map(box => [box.id, 0])); }
   function initialState() {
     return {
-      version: 2, balance: START_BALANCE, cases: emptyCounts(), keys: emptyCounts(), inventory: [],
+      version: 3, balance: START_BALANCE, cases: emptyCounts(), keys: emptyCounts(), inventory: [],
       settings: { sound: true, fast: false },
-      stats: { spent: 0, earned: 0, opens: 0, sold: 0, bestDrop: null, workActions: 0, caseOpens: emptyCounts(), rarities: Object.fromEntries(Object.keys(RARITIES).map(id => [id, 0])) },
+      stats: { spent: 0, earned: 0, opens: 0, sold: 0, bestDrop: null, workActions: 0, upgradeAttempts: 0, upgradeWins: 0, upgradeLostValue: 0, caseOpens: emptyCounts(), rarities: Object.fromEntries(Object.keys(RARITIES).map(id => [id, 0])) },
       progress: { xp: 0, discovered: {}, claimedMissions: [], claimedCollections: [], legacyAccess: [] },
-      dailyClaimed: null, lastWork: 0, workCombo: 0, storageWarning: null
+      dailyClaimed: null, lastWork: 0, workCombo: 0, lastUpgrade: null, storageWarning: null
     };
   }
 
@@ -149,24 +222,26 @@
       const source = skinIndex[raw.skinId];
       if (!source || source.caseId !== raw.caseId || raw.rarity !== source.rarity || !integer(raw.value) || raw.value < 1) return null;
       if (typeof raw.float !== "number" || !Number.isFinite(raw.float) || raw.float < 0 || raw.float > 1) return null;
-      const wearFloat = migrating ? Math.max(source.minFloat, Math.min(source.maxFloat, raw.float)) : raw.float;
-      const wear = WEARS.find(entry => wearFloat >= entry.min && wearFloat < entry.max);
-      if (!wear || wearFloat < source.minFloat || wearFloat > source.maxFloat || (!migrating && wear.code !== raw.wearCode)) return null;
-      const stattrak = Boolean(raw.stattrak) && source.art !== "gloves" && source.weapon !== "Zeus x27";
+      const wearFloat = source.noWear ? 0 : migrating ? Math.max(source.minFloat, Math.min(source.maxFloat, raw.float)) : raw.float;
+      const wear = wearAt(source, wearFloat);
+      if (!wear || !availableWear(source, wear.code) || wearFloat < source.minFloat || wearFloat > source.maxFloat || (!migrating && wear.code !== raw.wearCode)) return null;
+      const stattrak = Boolean(raw.stattrak) && supportsStatTrak(source);
       seen.add(raw.id);
       return {
         id: raw.id, skinId: source.id, weapon: source.weapon, name: source.name, rarity: source.rarity,
         wear: wear.label, wearCode: wear.code, float: wearFloat, value: migrating ? itemPrice(source, wear, stattrak) : raw.value, caseId: source.caseId,
-        stattrak, locked: raw.locked === true,
+        stattrak, locked: raw.locked === true, catalogId: source.sourceId || source.id,
+        phase: source.phase || null, displayName: source.displayName || source.name, noWear: Boolean(source.noWear),
         createdAt: timestamp(raw.createdAt) ? raw.createdAt : 0,
         art: source.art, palette: source.palette.slice()
       };
     }
 
     function restore(raw) {
-      if (!raw || typeof raw !== "object" || ![1, 2].includes(raw.version)) throw new Error("Nieobsługiwana wersja zapisu.");
+      if (!raw || typeof raw !== "object" || ![1, 2, 3].includes(raw.version)) throw new Error("Nieobsługiwana wersja zapisu.");
       const next = initialState();
       const migrating = raw.version === 1;
+      const expanded = raw.version < 3;
       let repaired = false;
       for (const field of ["balance"]) {
         if (integer(raw[field])) next[field] = raw[field]; else repaired = true;
@@ -174,7 +249,7 @@
       for (const group of ["cases", "keys"]) {
         for (const box of CASES) {
           if (raw[group] && integer(raw[group][box.id], MAX_COUNT)) next[group][box.id] = raw[group][box.id];
-          else if (!migrating || !raw[group] || Object.hasOwn(raw[group], box.id)) repaired = true;
+          else if (!raw[group] || Object.hasOwn(raw[group], box.id) || !expanded) repaired = true;
         }
       }
       const seen = new Set();
@@ -189,16 +264,17 @@
         if (raw.settings && typeof raw.settings[setting] === "boolean") next.settings[setting] = raw.settings[setting];
       }
       if (raw.stats && typeof raw.stats === "object") {
-        for (const key of ["spent", "earned", "opens", "sold", "workActions"]) {
-          if (integer(raw.stats[key])) next.stats[key] = raw.stats[key]; else if (!(migrating && key === "workActions")) repaired = true;
+        for (const key of ["spent", "earned", "opens", "sold", "workActions", "upgradeAttempts", "upgradeWins", "upgradeLostValue"]) {
+          if (integer(raw.stats[key])) next.stats[key] = raw.stats[key];
+          else if (!((migrating && key === "workActions") || (expanded && key.startsWith("upgrade")))) repaired = true;
         }
         for (const box of CASES) {
           if (raw.stats.caseOpens && integer(raw.stats.caseOpens[box.id], MAX_COUNT)) next.stats.caseOpens[box.id] = raw.stats.caseOpens[box.id];
-          else if (!migrating) repaired = true;
+          else if (!expanded || (raw.stats.caseOpens && Object.hasOwn(raw.stats.caseOpens, box.id))) repaired = true;
         }
         for (const rarity of Object.keys(RARITIES)) {
           if (raw.stats.rarities && integer(raw.stats.rarities[rarity], MAX_COUNT)) next.stats.rarities[rarity] = raw.stats.rarities[rarity];
-          else if (!migrating) repaired = true;
+          else if (!expanded || (raw.stats.rarities && Object.hasOwn(raw.stats.rarities, rarity))) repaired = true;
         }
         if (raw.stats.bestDrop != null) {
           next.stats.bestDrop = validItem(raw.stats.bestDrop, new Set(), migrating);
@@ -233,7 +309,7 @@
         next.progress.xp = next.inventory.length * OPEN_XP + countDiscoveries(next.progress.discovered) * DISCOVERY_XP;
         next.progress.legacyAccess = CASES.filter(box => next.cases[box.id] || next.keys[box.id]).map(box => box.id);
         for (const item of next.inventory) {
-          next.stats.caseOpens[item.caseId] = Math.min(MAX_COUNT, next.stats.caseOpens[item.caseId] + 1);
+          if (Object.hasOwn(next.stats.caseOpens, item.caseId)) next.stats.caseOpens[item.caseId] = Math.min(MAX_COUNT, next.stats.caseOpens[item.caseId] + 1);
           next.stats.rarities[item.rarity] = Math.min(MAX_COUNT, next.stats.rarities[item.rarity] + 1);
         }
       }
@@ -241,6 +317,18 @@
       else repaired = true;
       if (timestamp(raw.lastWork)) next.lastWork = raw.lastWork;
       if (integer(raw.workCombo, 16)) next.workCombo = Math.min(9, raw.workCombo);
+      if (raw.lastUpgrade && typeof raw.lastUpgrade === "object") {
+        const record = raw.lastUpgrade;
+        const source = skinIndex[record.targetSkinId];
+        const item = record.item ? validItem(record.item, new Set()) : null;
+        if (source && availableWear(source, record.wearCode) && typeof record.won === "boolean" &&
+            Number.isFinite(record.chance) && record.chance > 0 && record.chance <= UPGRADE_MAX_CHANCE &&
+            integer(record.inputValue) && record.inputValue > 0 && integer(record.targetValue) && record.targetValue > 0 &&
+            timestamp(record.createdAt) && (record.won ? Boolean(item) : !record.item)) {
+          next.lastUpgrade = { won: record.won, item, chance: record.chance, inputValue: record.inputValue, targetValue: record.targetValue,
+            targetSkinId: source.id, wearCode: record.wearCode, createdAt: record.createdAt };
+        } else repaired = true;
+      }
       if (repaired) next.storageWarning = "Naprawiono uszkodzone dane zapisu. Poprawne przedmioty i postęp zostały zachowane.";
       else if (migrating) next.storageWarning = "Zapis zaktualizowano: zachowano środki i ekwipunek, wyceny dopasowano do nowego rynku. Album odzyskał skiny z ekwipunku i najlepszy historyczny drop; sprzedanych wcześniej skinów nie da się odtworzyć.";
       return next;
@@ -341,10 +429,10 @@
       const key = finishKey(source);
       return Object.keys(state.progress.discovered).some(id => skinIndex[id] && finishKey(skinIndex[id]) === key);
     }
-    function discover(skinId) {
+    function discover(skinId, xp = DISCOVERY_XP) {
       const fresh = !isDiscovered(skinId);
       state.progress.discovered[skinId] = true;
-      if (fresh) addXP(DISCOVERY_XP);
+      if (fresh && xp > 0) addXP(xp);
       return fresh;
     }
     function getProgress() {
@@ -387,10 +475,13 @@
       return CASES.map(box => {
         const regular = box.skins.filter(source => source.rarity !== "rare");
         const rare = box.skins.filter(source => source.rarity === "rare");
-        const discovered = regular.filter(source => finishes.has(finishKey(source))).length;
+        // A knives-only custom collection still needs actual discoveries to earn a medal.
+        const required = box.isCustom || box.category === "custom" || !regular.length ? box.skins : regular;
+        const discovered = required.filter(source => finishes.has(finishKey(source))).length;
         return {
-          caseId: box.id, name: box.name, discovered, total: regular.length, complete: discovered === regular.length,
-          claimed: state.progress.claimedCollections.includes(box.id), percent: Math.round(discovered / regular.length * 100),
+          caseId: box.id, name: box.name, discovered, total: required.length, complete: required.length > 0 && discovered === required.length,
+          claimed: state.progress.claimedCollections.includes(box.id), percent: required.length ? Math.round(discovered / required.length * 100) : 0,
+          requiresRare: box.isCustom || box.category === "custom" || !regular.length,
           opened: state.stats.caseOpens[box.id], cash: 500, xp: 200,
           rareDiscovered: rare.filter(source => finishes.has(finishKey(source))).length, rareTotal: rare.length
         };
@@ -416,7 +507,7 @@
         const collection = getCollections().find(entry => entry.caseId === caseId);
         if (!collection) return fail("Nie znaleziono tej kolekcji.");
         if (collection.claimed) return fail("Medal za tę kolekcję został już odebrany.");
-        if (!collection.complete) return fail("Odkryj wszystkie zwykłe skiny z tej kolekcji. Złote dropy są opcjonalne.");
+        if (!collection.complete) return fail(collection.requiresRare ? "Odkryj wszystkie skiny tej kolekcji specjalnej." : "Odkryj wszystkie zwykłe skiny z tej kolekcji. Złote dropy są opcjonalne.");
         if (state.balance + collection.cash > MAX_MONEY) return fail("Osiągnięto limit środków na koncie.");
         state.balance += collection.cash;
         addStat("earned", collection.cash);
@@ -443,20 +534,44 @@
       });
     }
 
-    function createItem(box) {
-      const draw = random() * 100000;
+    function drawSource(box) {
+      if (Array.isArray(box.dropTable) || box.skins.some(source => Number.isFinite(source.dropWeight) && source.dropWeight > 0)) {
+        const table = dropTables[box.id];
+        const total = table.reduce((sum, row) => sum + row.weight, 0);
+        const draw = random() * total;
+        let cumulative = 0;
+        for (const row of table) {
+          cumulative += row.weight;
+          if (draw < cumulative) return skinIndex[row.skinId];
+        }
+        return skinIndex[table[table.length - 1].skinId];
+      }
+      const available = Object.values(RARITIES).filter(definition => definition.weight > 0 && box.skins.some(source => source.rarity === definition.id));
+      const draw = random() * available.reduce((sum, definition) => sum + definition.weight, 0);
       let cumulative = 0;
-      let rarity = "rare";
-      for (const definition of Object.values(RARITIES)) {
+      let rarity = available[available.length - 1].id;
+      for (const definition of available) {
         cumulative += definition.weight;
         if (draw < cumulative) { rarity = definition.id; break; }
       }
       const pool = box.skins.filter(entry => entry.rarity === rarity);
-      const source = pool[Math.floor(random() * pool.length)];
-      const wearFloat = Number((source.minFloat + random() * (source.maxFloat - source.minFloat)).toFixed(6));
-      const wear = WEARS.find(entry => wearFloat >= entry.min && wearFloat < entry.max) || WEARS[WEARS.length - 1];
-      const stattrak = source.art !== "gloves" && source.weapon !== "Zeus x27" && random() < 0.1;
-      const value = itemPrice(source, wear, stattrak, 0.96 + random() * 0.08);
+      return pool[Math.floor(random() * pool.length)];
+    }
+    function randomFloat(minimum, maximum) {
+      if (minimum >= maximum) return minimum;
+      // Avoid rounding onto an adjacent condition, especially float-capped finishes.
+      const value = minimum + random() * (maximum - minimum);
+      const rounded = Math.floor(value * 1000000) / 1000000;
+      return Math.max(minimum, Math.min(maximum - Number.EPSILON, rounded));
+    }
+    function itemFromSource(source, wearCode = null, exactValue = null) {
+      const requestedWear = wearCode ? availableWear(source, wearCode) : null;
+      const wearFloat = source.noWear ? 0 : requestedWear ?
+        randomFloat(Math.max(source.minFloat, requestedWear.min), Math.min(source.maxFloat, requestedWear.max, 1)) :
+        randomFloat(source.minFloat, source.maxFloat);
+      const wear = requestedWear || wearAt(source, wearFloat);
+      const stattrak = exactValue === null && supportsStatTrak(source) && random() < 0.1;
+      const value = exactValue === null ? itemPrice(source, wear, stattrak, 0.96 + random() * 0.08) : exactValue;
       const timestamp = now();
       sequence += 1;
       let unique;
@@ -464,33 +579,109 @@
       const id = unique || `drop-${timestamp.toString(36)}-${sequence.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
       return {
         id, skinId: source.id, weapon: source.weapon, name: source.name, rarity: source.rarity,
-        wear: wear.label, wearCode: wear.code, float: wearFloat, value, caseId: box.id,
-        stattrak, locked: false, createdAt: timestamp, art: source.art, palette: source.palette.slice()
+        wear: wear.label, wearCode: wear.code, float: wearFloat, value, caseId: source.caseId,
+        stattrak, locked: false, catalogId: source.sourceId || source.id, noWear: Boolean(source.noWear),
+        phase: source.phase || null, displayName: source.displayName || source.name,
+        createdAt: timestamp, art: source.art, palette: source.palette.slice()
       };
     }
+    function createItem(box) { return itemFromSource(drawSource(box)); }
 
-    function openCase(caseId) {
+    function openCases(caseId, quantity = 1) {
       return transaction(() => {
         const box = caseIndex[caseId];
         if (!box) return fail("Nie znaleziono tej skrzynki.");
+        if (!OPEN_QUANTITIES.includes(quantity)) return fail("Wybierz otwarcie 1, 2, 3 lub 5 skrzynek naraz.");
         const access = getCaseAccess(caseId);
         if (!access.unlocked) return fail(`Ta kolekcja odblokuje się na poziomie ${access.requiredLevel}.`);
-        if (!state.cases[caseId]) return fail("Najpierw kup tę skrzynkę w sklepie.");
-        if (!state.keys[caseId]) return fail("Do otwarcia potrzebujesz pasującego klucza.");
-        if (state.inventory.length >= MAX_INVENTORY) return fail("Ekwipunek jest pełny. Sprzedaj kilka przedmiotów.");
-        const item = createItem(box);
-        state.cases[caseId] -= 1;
-        state.keys[caseId] -= 1;
-        state.inventory.unshift(item);
-        addStat("opens", 1);
-        state.stats.caseOpens[box.id] = Math.min(MAX_COUNT, state.stats.caseOpens[box.id] + 1);
-        state.stats.rarities[item.rarity] = Math.min(MAX_COUNT, state.stats.rarities[item.rarity] + 1);
-        addXP(OPEN_XP);
-        const fresh = discover(item.skinId);
-        if (!state.stats.bestDrop || item.value > state.stats.bestDrop.value) state.stats.bestDrop = clone(item);
-        const xpAwarded = OPEN_XP + (fresh ? DISCOVERY_XP : 0);
-        return { ok: true, item: clone(item), discovered: fresh, newDiscovery: fresh, xp: xpAwarded, xpAwarded, level: getProgress().level };
+        if (state.cases[caseId] < quantity) return fail(`Potrzebujesz ${quantity} pasujących skrzynek. Kup brakujące w sklepie.`);
+        if (state.keys[caseId] < quantity) return fail(`Potrzebujesz ${quantity} pasujących kluczy do tych skrzynek.`);
+        if (state.inventory.length + quantity > MAX_INVENTORY) return fail("Ekwipunek jest pełny. Sprzedaj kilka przedmiotów.");
+        const items = Array.from({ length: quantity }, () => createItem(box));
+        const openingXP = getOpeningXP(caseId);
+        state.cases[caseId] -= quantity;
+        state.keys[caseId] -= quantity;
+        state.inventory.unshift(...items);
+        addStat("opens", quantity);
+        state.stats.caseOpens[box.id] = Math.min(MAX_COUNT, state.stats.caseOpens[box.id] + quantity);
+        const rewards = items.map(item => {
+          state.stats.rarities[item.rarity] = Math.min(MAX_COUNT, state.stats.rarities[item.rarity] + 1);
+          addXP(openingXP.openXP);
+          const fresh = discover(item.skinId, openingXP.discoveryXP);
+          if (!state.stats.bestDrop || item.value > state.stats.bestDrop.value) state.stats.bestDrop = clone(item);
+          return { item: clone(item), discovered: fresh, newDiscovery: fresh, xpAwarded: openingXP.openXP + (fresh ? openingXP.discoveryXP : 0) };
+        });
+        return { ok: true, items: clone(items), rewards, quantity,
+          totalValue: items.reduce((sum, item) => sum + item.value, 0),
+          xpAwarded: rewards.reduce((sum, reward) => sum + reward.xpAwarded, 0), level: getProgress().level };
       });
+    }
+    function openCase(caseId) {
+      const result = openCases(caseId, 1);
+      if (!result.ok) return result;
+      const reward = result.rewards[0];
+      return { ...result, ...reward, xp: reward.xpAwarded };
+    }
+
+    function buildUpgradeQuote(ids, targetSkinId, wearCode) {
+      if (!Array.isArray(ids) || ids.length < 1 || ids.length > 5 || ids.some(id => typeof id !== "string")) return fail("Wybierz od 1 do 5 skinów do ulepszenia.");
+      const selected = new Set(ids);
+      if (selected.size !== ids.length) return fail("Każdy skin można dodać do ulepszenia tylko raz.");
+      const inputs = state.inventory.filter(item => selected.has(item.id));
+      if (inputs.length !== selected.size) return fail("Co najmniej jeden wybrany skin nie znajduje się już w ekwipunku.");
+      if (inputs.some(item => item.locked)) return fail("Ulubione skiny są chronione. Najpierw odznacz gwiazdkę przy przedmiocie.");
+      const source = skinIndex[targetSkinId];
+      if (!source) return fail("Wybierz docelowy skin z katalogu.");
+      const wear = availableWear(source, wearCode);
+      if (!wear) return fail("Ten skin nie występuje w wybranym stanie zużycia.");
+      const inputValue = inputs.reduce((sum, item) => sum + item.value, 0);
+      const targetValue = itemPrice(source, wear, false);
+      if (!integer(targetValue) || targetValue < Math.ceil(inputValue * 1.05)) return fail("Docelowy skin musi być wart co najmniej 105% łącznej wartości wkładu.");
+      const chance = Math.min(UPGRADE_MAX_CHANCE, inputValue / targetValue * (1 - UPGRADE_HOUSE_EDGE));
+      const canonicalId = source.sourceId && canonicalIndex[source.sourceId] ? source.sourceId : source.id;
+      const canonical = skinIndex[canonicalId];
+      const target = { ...clone(canonical), value: targetValue, wear: wear.label, wearCode: wear.code, stattrak: false, catalogId: source.sourceId || source.id };
+      return { ok: true, ids: [...ids], inputValue, targetValue, chance, multiplier: targetValue / inputValue,
+        houseEdge: UPGRADE_HOUSE_EDGE, maxChance: UPGRADE_MAX_CHANCE, targetSkinId: canonicalId,
+        wearCode: wear.code, target, inputs: clone(inputs) };
+    }
+    function quoteUpgrade(ids, targetSkinId, wearCode) {
+      if (writing) return fail("Poczekaj na zakończenie poprzedniej operacji.");
+      refresh();
+      return buildUpgradeQuote(ids, targetSkinId, wearCode);
+    }
+    function upgrade(ids, targetSkinId, wearCode) {
+      return transaction(() => {
+        // Recalculate from the shared save. A stale quote never spends missing or locked skins.
+        const quote = buildUpgradeQuote(ids, targetSkinId, wearCode);
+        if (!quote.ok) return quote;
+        const roll = random();
+        const won = roll < quote.chance;
+        const item = won ? itemFromSource(skinIndex[quote.targetSkinId], quote.wearCode, quote.targetValue) : null;
+        const selected = new Set(quote.ids);
+        state.inventory = state.inventory.filter(input => !selected.has(input.id));
+        addStat("upgradeAttempts", 1);
+        let fresh = false;
+        if (won) {
+          state.inventory.unshift(item);
+          addStat("upgradeWins", 1);
+          fresh = discover(item.skinId, 0);
+          if (!state.stats.bestDrop || item.value > state.stats.bestDrop.value) state.stats.bestDrop = clone(item);
+        } else addStat("upgradeLostValue", quote.inputValue);
+        state.lastUpgrade = { won, item: item ? clone(item) : null, chance: quote.chance, inputValue: quote.inputValue,
+          targetValue: quote.targetValue, targetSkinId: quote.targetSkinId, wearCode: quote.wearCode, createdAt: now() };
+        return { ...quote, won, roll, item: item ? clone(item) : null, newDiscovery: fresh,
+          xpAwarded: 0, quantity: quote.ids.length, level: getProgress().level };
+      });
+    }
+
+    function getResources() {
+      return {
+        cases: CASES.filter(box => state.cases[box.id] > 0).map(box => ({ caseId: box.id, count: state.cases[box.id], name: box.name, image: box.image || null })),
+        keys: CASES.filter(box => state.keys[box.id] > 0).map(box => ({ caseId: box.id, count: state.keys[box.id], name: `Klucz · ${box.name}`, image: box.keyImage || null })),
+        totalCases: Object.values(state.cases).reduce((sum, count) => sum + count, 0),
+        totalKeys: Object.values(state.keys).reduce((sum, count) => sum + count, 0)
+      };
     }
 
     function saleValue(value) { return integer(value) ? Math.floor(value * 90 / 100) : 0; }
@@ -581,21 +772,21 @@
       },
       buyCase: (caseId, quantity = 1) => buy(caseId, quantity, "cases"),
       buyKey: (caseId, quantity = 1) => buy(caseId, quantity, "keys"),
-      openCase,
+      openCase, openCases,
       previewItem(caseId) { return caseIndex[caseId] ? createItem(caseIndex[caseId]) : null; },
       sellItem: id => sellItems([id]), sellItems, saleValue,
       getWorkStatus, work, getDailyStatus, claimDaily, setSetting, reset,
       getProgress, getCaseAccess, getCampaign, claimMission, getCollections, claimCollection,
-      setItemLocked, isDiscovered,
+      setItemLocked, isDiscovered, quoteUpgrade, upgrade, getResources, getDropChances, getRarityChances, getOpeningXP,
       getSkinValue(skinId, wearCode, stattrak = false) {
         const source = skinIndex[skinId];
-        const wear = WEARS.find(entry => entry.code === wearCode);
+        const wear = source && availableWear(source, wearCode);
         if (!source || !wear || typeof stattrak !== "boolean") return null;
-        if (source.maxFloat <= wear.min || source.minFloat >= wear.max || (source.wearValues && !source.wearValues[wear.code])) return null;
-        return itemPrice(source, wear, stattrak && source.art !== "gloves" && source.weapon !== "Zeus x27");
+        return itemPrice(source, wear, stattrak && supportsStatTrak(source));
       }
     });
   }
 
-  return Object.freeze({ CASES, RARITIES, WEARS, STORAGE_KEY, START_BALANCE, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, OPEN_XP, DISCOVERY_XP, MISSIONS, createGame });
+  return Object.freeze({ CASES, SKINS, RARITIES, WEARS, STORAGE_KEY, START_BALANCE, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, MAX_INVENTORY,
+    OPEN_XP, DISCOVERY_XP, MISSIONS, OPEN_QUANTITIES, UPGRADE_HOUSE_EDGE, UPGRADE_MAX_CHANCE, getDropChances, getRarityChances, getOpeningXP, createGame });
 });
