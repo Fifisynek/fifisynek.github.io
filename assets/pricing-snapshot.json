@@ -1,14 +1,15 @@
 {
   "meta": {
     "version": 5,
+    "economyVersion": 2,
     "catalogDate": "2026-11-05",
-    "catalogGeneratedAt": "2026-11-05T19:21:11.352Z",
+    "catalogGeneratedAt": "2026-11-06T13:53:10.230Z",
     "priceSnapshotDate": "2026-11-05",
     "priceFetchedAt": "2026-11-05T19:06:49.104Z",
     "currency": "USD",
     "priceType": "fixed-simulation-snapshot",
     "pricingLabel": "Migawka Skinport: najniższa oferta dla dokładnego stanu, fazy i edycji. Bez ofert: cena referencyjna; brakujące notowania oznaczono jako szacunek.",
-    "pricingMethod": "Exact market_hash_name + version key. min_price when quantity > 0, suggested_price when no offer, explicitly estimated missing references. Separate regular, StatTrak and Souvenir wear values. No seed premiums or random price variation. Case costs include actual 10% StatTrak prices and cap expected net sale at 64%.",
+    "pricingMethod": "Exact market_hash_name + version key. min_price when quantity > 0, suggested_price when no offer, explicitly estimated missing references. Separate regular, StatTrak and Souvenir wear values. No seed premiums or random price variation. Keyless case prices preserve the former combined case and key cost, include actual 10% StatTrak prices and cap expected net sale at 64%.",
     "priceSource": "https://api.skinport.com/v1/items?app_id=730&currency=USD",
     "priceDocumentation": "https://docs.skinport.com/items",
     "priceRows": 37229,
