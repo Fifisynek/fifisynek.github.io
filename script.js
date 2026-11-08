@@ -31,6 +31,7 @@
   let route = location.hash.slice(1) || 'cases';
   let spinning = false;
   let busyKind = null;
+  let purchasing = false;
   let selectedFilter = 'all';
   let catalogQuery = '', catalogSort = 'level', catalogPage = 1;
   let catalogOrigin = 'all', shopOrigin = 'all';
@@ -103,10 +104,10 @@
   function paintHeader() {
     $('#balance').textContent = money(state.balance);
     const resources = game.getResources();
-    const inventoryCount = state.inventory.length + resources.totalCases + resources.totalKeys;
+    const inventoryCount = state.inventory.length + resources.totalCases;
     $('#inventory-count').textContent = inventoryCount > 999 ? '999+' : inventoryCount;
     $('#inventory-count').hidden = inventoryCount === 0;
-    $('#inventory-count').title = `${state.inventory.length} skinów · ${resources.totalCases} skrzynek · ${resources.totalKeys} kluczy`;
+    $('#inventory-count').title = `${state.inventory.length} skinów · ${resources.totalCases} skrzynek`;
     const progression = game.getProgress();
     $('#player-level').textContent = progression.level;
     $('.level-avatar').title = `Poziom ${progression.level} · ${progression.rank}`;
@@ -146,7 +147,7 @@
   }
 
   function caseCard(box) {
-    const owned = state.cases[box.id], keys = state.keys[box.id];
+    const owned = state.cases[box.id];
     const access = game.getCaseAccess(box.id);
     const collection = game.getCollections().find(c => c.caseId === box.id);
     return `<article class="case-card ${access.unlocked ? '' : 'locked-case'} ${box.isCustom ? 'custom-box' : ''}" style="--case-color:${box.accent}">
@@ -155,9 +156,9 @@
       <h3><a href="#case/${box.id}">${escape(box.name)}</a></h3>
       <div class="case-meta">${rarityDots(box)}<span>${box.skins.length} wykończeń · ${escape(box.rareType)}</span></div>
       <div class="case-discoveries"><span>Album ${collection.discovered} / ${collection.total}</span><div class="progress-track"><span style="width:${collection.percent}%"></span></div></div>
-      <div class="card-bottom"><span class="case-price"><small>Skrzynka + klucz</small>${money(box.price + box.keyPrice)}</span><a href="#case/${box.id}" class="card-open">${access.unlocked ? 'Wybierz' : `Poz. ${access.requiredLevel}`} ${icon(access.unlocked ? 'arrow' : 'lock')}</a></div>
-      <div class="case-cost-breakdown">Skrzynka ${money(box.price)} · Klucz ${money(box.keyPrice)}</div>
-      ${owned || keys ? `<div class="case-owned"><span>Skrzynki: ${owned}</span><span>Klucze: ${keys}</span></div>` : ''}
+      <div class="card-bottom"><span class="case-price"><small>Cena skrzynki</small>${money(box.price)}</span><a href="#case/${box.id}" class="card-open">${access.unlocked ? 'Wybierz' : `Poz. ${access.requiredLevel}`} ${icon(access.unlocked ? 'arrow' : 'lock')}</a></div>
+      <div class="case-cost-breakdown">Gotowa do otwarcia</div>
+      ${owned ? `<div class="case-owned"><span>Skrzynki: ${owned}</span></div>` : ''}
     </article>`;
   }
 
@@ -169,7 +170,7 @@
       <div class="hero-visual" aria-hidden="true"><span class="hero-outline">RARE</span>${image(assets.hero.nightwish || skinImage(CASES[0].skins[15]), '', 'hero-weapon', true)}${caseImage('dnm', 'hero-case', true)}${image(assets.hero.kukri, '', 'hero-knife', true)}<span class="hero-rarity">${icon('star')}<span><b>0,26%</b><small>JEDEN DROP. WIELKIE EMOCJE.</small></span></span><span class="hero-tag"><small>COVERT COLLECTION</small><b>AK-47 · Nightwish</b></span><span class="cross one">+</span><span class="cross two">+</span></div>
     </section>
     ${statsBar()}
-    ${window.CareerView.teaser(careerContext())}<div class="collection-shortcuts"><a href="#showcase">${icon("star")}<span><b>Twoja gablota</b><small>Ułóż wymarzony zestaw i zapisz obrazek.</small></span>${icon("arrow")}</a><a href="#career/weekly">${icon("gift")}<span><b>Wyzwania tygodnia</b><small>Zdobywaj skrzynki, klucze i motywy.</small></span>${icon("arrow")}</a><a href="#career/history">${icon("clock")}<span><b>Historia i rekordy</b><small>Każde otwarcie tworzy Twoją historię.</small></span>${icon("arrow")}</a></div>
+    ${window.CareerView.teaser(careerContext())}<div class="collection-shortcuts"><a href="#showcase">${icon("star")}<span><b>Twoja gablota</b><small>Ułóż wymarzony zestaw i zapisz obrazek.</small></span>${icon("arrow")}</a><a href="#career/weekly">${icon("gift")}<span><b>Wyzwania tygodnia</b><small>Zdobywaj skrzynki, XP i motywy.</small></span>${icon("arrow")}</a><a href="#career/history">${icon("clock")}<span><b>Historia i rekordy</b><small>Każde otwarcie tworzy Twoją historię.</small></span>${icon("arrow")}</a></div>
     <section id="catalog" aria-labelledby="cases-title"><div class="section-head"><div><p class="eyebrow">${officialCount} OFICJALNE · ${customCount} AUTORSKICH · ${collectionCount} KOLEKCJI · ${terminalCount} TERMINALE</p><h2 id="cases-title">Wybierz swoją skrzynkę<small>${CASES.length} kolekcji</small></h2></div><button class="text-button" data-action="odds">${icon('info')} Szanse wylotu</button></div>
     <div class="catalog-toolbar"><div class="segmented" aria-label="Filtr skrzynek">${[['all', 'Wszystkie'], ['unlocked', `Odblokowane (${game.getProgress().unlockedCases})`], ['owned', `Moje (${owned})`]].map(([id, label]) => `<button class="${selectedFilter === id ? 'active' : ''}" data-action="case-filter" data-filter="${id}" aria-pressed="${selectedFilter === id}">${label}</button>`).join('')}</div><label class="search-field">${icon('search')}<input id="case-search" type="search" aria-label="Szukaj skrzynki" placeholder="Znajdź kolekcję…" value="${escape(catalogQuery)}"></label><select id="case-origin" class="filter-select" aria-label="Rodzaj skrzynek"><option value="all" ${catalogOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${catalogOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${catalogOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="collection" ${catalogOrigin === 'collection' ? 'selected' : ''}>Kolekcje · symulacja</option><option value="terminal" ${catalogOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><select id="case-sort" class="filter-select" aria-label="Sortuj skrzynki"><option value="level" ${catalogSort === 'level' ? 'selected' : ''}>Według poziomu</option><option value="price" ${catalogSort === 'price' ? 'selected' : ''}>Najtańsze otwarcie</option><option value="price_desc" ${catalogSort === 'price_desc' ? 'selected' : ''}>Najdroższe otwarcie</option><option value="name" ${catalogSort === 'name' ? 'selected' : ''}>Nazwa A–Z</option></select></div><p id="catalog-count" class="filter-results"></p><div id="catalog-grid" class="case-grid"></div><div id="catalog-pagination"></div></section>
     <div class="promo-row"><article class="promo"><span class="promo-icon">${icon('gift')}</span><div><h3>Dobry dzień zaczyna się od bonusu.</h3><p>Wracaj codziennie i odbieraj ${money(DAILY_REWARD)} na kolejne otwarcia.</p></div>${button(daily.available ? `Odbierz bonus ${icon('arrow')}` : `Odebrano ${icon('check')}`, 'daily', daily.available ? '' : 'disabled', 'small outline')}</article><article class="promo alt"><span class="promo-icon">${icon('bolt')}</span><div><h3>Więcej kliknięć. Więcej skrzynek.</h3><p>Zarabiaj w grze i rozkręcaj swoją kolekcję.</p></div><a class="button small outline" href="#earn">Zarabiaj ${icon('up')}</a></article></div>
@@ -181,7 +182,7 @@
     const grid = $('#catalog-grid');
     if (!grid) return;
     const boxes = CASES.filter(box => (selectedFilter === 'all' || selectedFilter === 'owned' && state.cases[box.id] > 0 || selectedFilter === 'unlocked' && game.getCaseAccess(box.id).unlocked) && originMatches(box, catalogOrigin) && box.name.toLowerCase().includes(catalogQuery.trim().toLowerCase()));
-    boxes.sort(catalogSort === 'price' ? (a, b) => a.price + a.keyPrice - b.price - b.keyPrice : catalogSort === 'price_desc' ? (a, b) => b.price + b.keyPrice - a.price - a.keyPrice : catalogSort === 'name' ? (a, b) => a.name.localeCompare(b.name) : (a, b) => a.requiredLevel - b.requiredLevel || a.price - b.price);
+    boxes.sort(catalogSort === 'price' ? (a, b) => a.price - b.price : catalogSort === 'price_desc' ? (a, b) => b.price - a.price : catalogSort === 'name' ? (a, b) => a.name.localeCompare(b.name) : (a, b) => a.requiredLevel - b.requiredLevel || a.price - b.price);
     const pages = Math.max(1, Math.ceil(boxes.length / 12));
     catalogPage = Math.min(pages, Math.max(1, catalogPage));
     $('#catalog-count').textContent = `${boxes.length} ${plural(boxes.length, 'kolekcja', 'kolekcje', 'kolekcji')} · Nowe skrzynki odblokujesz, zdobywając XP za odkrycia i misje.`;
@@ -233,7 +234,7 @@
 
 
   function renderShop() {
-    app.innerHTML = `<div class="view-heading"><p class="eyebrow"><span class="dash"></span> UZUPEŁNIJ ZAPASY</p><h1>Sklep ze skrzynkami</h1><p>Skrzynkę i klucz kupujesz osobno. Droższe kolekcje odblokujesz wraz z rozwojem kariery.</p></div><div class="info-banner">${icon('info')}<span>Każda skrzynka wymaga <strong>własnego, pasującego klucza</strong>. Saldo jest wspólne — zdecyduj, którą kolekcję chcesz teraz rozwijać.</span></div><div class="shop-toolbar"><label class="search-field">${icon('search')}<input id="shop-search" type="search" aria-label="Szukaj w sklepie" placeholder="Znajdź skrzynkę…" value="${escape(shopQuery)}"></label><select id="shop-origin" class="filter-select" aria-label="Rodzaj skrzynek w sklepie"><option value="all" ${shopOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${shopOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${shopOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="collection" ${shopOrigin === 'collection' ? 'selected' : ''}>Kolekcje · symulacja</option><option value="terminal" ${shopOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><label class="toggle"><input id="shop-unlocked" type="checkbox" ${shopUnlocked ? 'checked' : ''}>Tylko odblokowane</label><a class="button small outline" href="#career">${icon('trophy')} Poziom ${game.getProgress().level}</a></div><p class="filter-results" id="shop-count"></p><div class="shop-grid" id="shop-grid"></div><div class="trust-row"><span>${icon('wallet')} Wirtualne środki</span><span>${icon('check')} Zakupy zapisują się automatycznie</span><a href="#earn">Brakuje środków? Zarabiaj w grze ${icon('arrow')}</a></div>`;
+    app.innerHTML = `<div class="view-heading"><p class="eyebrow"><span class="dash"></span> UZUPEŁNIJ ZAPASY</p><h1>Sklep ze skrzynkami</h1><p>Kup skrzynkę i otwórz ją od razu. Droższe kolekcje odblokujesz wraz z rozwojem kariery.</p></div><div class="info-banner">${icon('info')}<span><strong>Jedna cena, gotowa skrzynka.</strong> Wybierz kolekcję i liczbę sztuk, a kupione skrzynki trafią do ekwipunku.</span></div><div class="shop-toolbar"><label class="search-field">${icon('search')}<input id="shop-search" type="search" aria-label="Szukaj w sklepie" placeholder="Znajdź skrzynkę…" value="${escape(shopQuery)}"></label><select id="shop-origin" class="filter-select" aria-label="Rodzaj skrzynek w sklepie"><option value="all" ${shopOrigin === 'all' ? 'selected' : ''}>Wszystkie typy</option><option value="official" ${shopOrigin === 'official' ? 'selected' : ''}>Oficjalne CS2</option><option value="custom" ${shopOrigin === 'custom' ? 'selected' : ''}>SKINLAB Originals</option><option value="collection" ${shopOrigin === 'collection' ? 'selected' : ''}>Kolekcje · symulacja</option><option value="terminal" ${shopOrigin === 'terminal' ? 'selected' : ''}>Terminale · symulacja</option></select><label class="toggle"><input id="shop-unlocked" type="checkbox" ${shopUnlocked ? 'checked' : ''}>Tylko odblokowane</label><a class="button small outline" href="#career">${icon('trophy')} Poziom ${game.getProgress().level}</a></div><p class="filter-results" id="shop-count"></p><div class="shop-grid" id="shop-grid"></div><div class="trust-row"><span>${icon('wallet')} Wirtualne środki</span><span>${icon('check')} Zakupy zapisują się automatycznie</span><a href="#earn">Brakuje środków? Zarabiaj w grze ${icon('arrow')}</a></div>`;
     renderShopGrid();
   }
 
@@ -244,7 +245,7 @@
     $('#shop-count').textContent = `${boxes.length} ${plural(boxes.length, 'kolekcja', 'kolekcje', 'kolekcji')} · ${game.getProgress().unlockedCases} / ${CASES.length} odblokowanych`;
     grid.innerHTML = boxes.length ? boxes.map(box => {
       const access = game.getCaseAccess(box.id);
-      return `<article class="shop-card ${access.unlocked ? '' : 'locked-shop'}"><div class="shop-case-head">${caseImage(box.id)}<div><span class="micro-label">POZ. ${box.requiredLevel} · ${escape(box.tierLabel || 'KOLEKCJA')}</span><h2>${escape(box.name)}</h2><p>${box.skins.length} skinów · ${escape(box.rareType)}</p><div class="shop-owned"><span>Skrzynki: ${state.cases[box.id]}</span><span>Klucze: ${state.keys[box.id]}</span></div></div></div>${!access.unlocked ? `<div class="shop-lock-message">${icon('lock')} Wymaga poziomu ${access.requiredLevel}. <a href="#career">Rozwijaj karierę ${icon('up')}</a></div>` : ''}${['case', 'key'].map(type => `<div class="shop-purchase">${icon(type === 'case' ? 'box' : 'key')}<div class="product-info"><h3>${type === 'case' ? 'Skrzynka' : 'Pasujący klucz'}</h3><p>${money(type === 'case' ? box.price : box.keyPrice)} / szt.</p></div><select class="quantity" id="qty-${type}-${box.id}" aria-label="Liczba ${type === 'case' ? 'skrzynek' : 'kluczy'} ${escape(box.name)}" ${!access.unlocked ? 'disabled' : ''}>${[1, 5, 10].map(qty => `<option value="${qty}">${qty}×</option>`).join('')}</select>${button('Kup', `buy-${type}`, `data-case="${box.id}" data-quantity="qty-${type}-${box.id}" ${!access.unlocked || state.balance < (type === 'case' ? box.price : box.keyPrice) ? 'disabled' : ''}`, `small ${type === 'case' ? '' : 'secondary'}`)}</div>`).join('')}<div class="shop-total"><span>Łączny koszt otwarcia</span><b>${money(box.price + box.keyPrice)}</b></div><a class="text-button" href="#case/${box.id}">Zobacz zawartość ${icon('arrow')}</a></article>`;
+      return `<article class="shop-card ${access.unlocked ? '' : 'locked-shop'}"><div class="shop-case-head">${caseImage(box.id)}<div><span class="micro-label">POZ. ${box.requiredLevel} · ${escape(box.tierLabel || 'KOLEKCJA')}</span><h2>${escape(box.name)}</h2><p>${box.skins.length} skinów · ${escape(box.rareType)}</p><div class="shop-owned"><span>Skrzynki: <b id="shop-owned-${box.id}">${state.cases[box.id]}</b></span></div></div></div>${!access.unlocked ? `<div class="shop-lock-message">${icon('lock')} Wymaga poziomu ${access.requiredLevel}. <a href="#career">Rozwijaj karierę ${icon('up')}</a></div>` : ''}<div class="shop-purchase">${icon('box')}<div class="product-info"><h3>Skrzynka</h3><p>${money(box.price)} / szt.</p></div><select class="quantity" id="qty-case-${box.id}" data-purchase-case="${box.id}" aria-label="Liczba skrzynek ${escape(box.name)}" ${!access.unlocked ? 'disabled' : ''}>${[1, 5, 10].map(qty => `<option value="${qty}">${qty}×</option>`).join('')}</select>${button('Kup', 'buy-case', `id="buy-case-${box.id}" data-case="${box.id}" data-quantity="qty-case-${box.id}" ${!access.unlocked || state.balance < box.price ? 'disabled' : ''}`, 'small')}</div><div class="shop-total"><span>Koszt zakupu</span><b id="shop-purchase-total-${box.id}">${money(box.price)}</b></div><a class="text-button" href="#case/${box.id}">Zobacz zawartość ${icon('arrow')}</a></article>`;
     }).join('') : `<div class="empty-state">${icon('search')}<h2>Nie znaleziono skrzynek</h2><p>Zmień nazwę lub pokaż również zablokowane kolekcje.</p></div>`;
   }
 
@@ -417,18 +418,52 @@
       app.innerHTML=window.CareerView.render(careerContext(), {tab:careerTab,chapter:careerChapter,collection:careerCollection,history:historyOptions});
     }
     else { route = 'cases'; renderCases(); }
-    if (state.storageWarning) app.insertAdjacentHTML('afterbegin', `<p class="storage-warning" role="alert">${icon('info')} ${escape(state.storageWarning)}</p>`);
+    if (state.storageWarning) app.insertAdjacentHTML('afterbegin', `<p id="state-storage-warning" class="storage-warning" role="alert">${icon('info')} ${escape(state.storageWarning)}</p>`);
   }
 
   function navigate(next) { location.hash = next; }
 
-  function runPurchase(type, target) {
+  function updatePurchaseControls() {
+    if (!(route.startsWith('case/') && $('#open-case')) && !(route === 'shop' && $('#shop-grid'))) return false;
+    document.querySelectorAll('[data-action="buy-case"]').forEach(control => {
+      const box = caseById(control.dataset.case);
+      if (!box) return;
+      const select = control.dataset.quantity && document.getElementById(control.dataset.quantity);
+      const quantity = select ? Number(select.value) : Number(control.dataset.count || 1);
+      const access = game.getCaseAccess(box.id);
+      control.disabled = !access.unlocked || !Number.isSafeInteger(quantity) || quantity < 1 || state.balance < box.price * quantity;
+      const owned = document.getElementById(`shop-owned-${box.id}`);
+      if (owned) owned.textContent = state.cases[box.id] || 0;
+      const total = document.getElementById(`shop-purchase-total-${box.id}`);
+      if (total) total.textContent = money(box.price * quantity);
+    });
+    if (route.startsWith('case/')) {
+      const box = caseById(route.split('/')[1]);
+      if (!box) return false;
+      const owned = state.cases[box.id] || 0;
+      const access = game.getCaseAccess(box.id);
+      const ready = access.unlocked && owned >= openingCount;
+      $('#open-case').disabled = !ready;
+      const count = $('#open-owned-count');
+      if (count) { count.textContent = owned; count.classList.toggle('ready', owned >= openingCount); }
+      const purchaseCount = $('#opener-owned-count');
+      if (purchaseCount) purchaseCount.textContent = owned;
+      const message = $('#open-ready-message');
+      if (message) message.textContent = ready ? '· Gotowe do otwarcia!' : access.unlocked ? `· Do tej serii potrzebujesz ${openingCount} skrzynek.` : `· Odblokuj poziom ${access.requiredLevel}.`;
+    }
+    return true;
+  }
+
+  function runPurchase(target) {
     const id = target.dataset.case;
     const qty = target.dataset.count ? Number(target.dataset.count) : target.dataset.quantity ? Number(document.getElementById(target.dataset.quantity)?.value) : 1;
-    const result = type === 'case' ? game.buyCase(id, qty) : game.buyKey(id, qty);
+    let result;
+    purchasing = true;
+    try { result = game.buyCase(id, qty); }
+    finally { purchasing = false; }
     if (!result.ok) { toast(result.error, true); return; }
     sound('buy');
-    toast(`${type === 'case' ? 'Kupiono skrzynki' : 'Kupiono klucze'}: ${qty}× ${caseById(id).name}`);
+    toast(`Kupiono skrzynki: ${qty}× ${caseById(id).name}`);
   }
 
   document.addEventListener('click', event => {
@@ -475,7 +510,7 @@
       case 'claim-weekly': {
         const result=game.claimWeekly(target.dataset.id);
         if(!result.ok){toast(result.error,true);break;}
-        sound('win');toast('Nagroda tygodniowa odebrana. Skrzynki, klucze i XP są już zapisane.');break;
+        sound('win');toast('Nagroda tygodniowa odebrana. Skrzynki i XP są już zapisane.');break;
       }
       case 'skip-opening': window.OpeningView.skip(); break;
       case 'opening-count': openingCount=Number(target.dataset.count); render(); break;
@@ -526,8 +561,7 @@
         break;
       }
       case 'favorites-filter': inventoryFilter.favorites = !inventoryFilter.favorites; inventoryFilter.page = 1; renderInventory(); break;
-      case 'buy-case': runPurchase('case', target); break;
-      case 'buy-key': runPurchase('key', target); break;
+      case 'buy-case': runPurchase(target); break;
       case 'open': openCase(target.dataset.case); break;
       case 'odds': showOdds(target.dataset.case); break;
       case 'stats': showStats(); break;
@@ -603,6 +637,7 @@
   });
   document.addEventListener('change', event => {
     if(spinning)return;
+    if(event.target.id.startsWith('qty-case-')) updatePurchaseControls();
     if(event.target.id.startsWith('atlas-') && Object.hasOwn(atlasOptions,event.target.id.slice(6))){atlasOptions[event.target.id.slice(6)]=event.target.value;atlasOptions.page=1;preserveInput(renderAtlas);}
     if(event.target.id==='showcase-sort'&&showcasePicker){showcasePicker.sort=event.target.value;showcasePicker.page=1;renderShowcasePicker();}
     if(event.target.id==='history-type'){historyOptions.type=event.target.value;historyOptions.page=1;preserveInput(render);}
@@ -654,7 +689,19 @@
   game.subscribe(next => {
     state = next;
     paintHeader();
-    if (!spinning) render();
+    if (!spinning) {
+      if (purchasing && updatePurchaseControls()) {
+        const warning = $('#state-storage-warning');
+        if (warning) {
+          warning.hidden = !state.storageWarning;
+          if (state.storageWarning) warning.textContent = state.storageWarning;
+        } else if (state.storageWarning) {
+          app.insertAdjacentHTML('afterbegin', `<p id="state-storage-warning" class="storage-warning" role="alert">${icon('info')} ${escape(state.storageWarning)}</p>`);
+        }
+        return;
+      }
+      render();
+    }
   });
   showTicker(); paintHeader(); render();
   setInterval(updateTimers, 500);

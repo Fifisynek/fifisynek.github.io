@@ -13,6 +13,7 @@
   const STORAGE_KEY = "case-lab-save-v1";
   const STORAGE_BACKUP_KEY = STORAGE_KEY + ":verified-backup";
   const START_BALANCE = 10000;
+  const ECONOMY_VERSION = 2;
   const SALE_FEE = 0.10;
   const DAILY_REWARD = 250;
   const WORK_COOLDOWN = 1000;
@@ -146,7 +147,7 @@
   function getOpeningXP(caseId) {
     const box = caseIndex[caseId];
     if (!box) return { openXP: 0, discoveryXP: 0 };
-    const scale = Math.min(1, (box.price + box.keyPrice) / 249);
+    const scale = Math.min(1, box.price / 249);
     return { openXP: Math.max(1, Math.floor(OPEN_XP * scale)), discoveryXP: Math.max(1, Math.floor(DISCOVERY_XP * scale)) };
   }
   const RANKS = ["Rekrut", "Poszukiwacz", "Kolekcjoner", "Specjalista", "Ekspert", "Kurator"];
@@ -304,7 +305,7 @@
   }
   function initialState(at = 0) {
     return {
-      version: 3, balance: START_BALANCE, cases: emptyCounts(), keys: emptyCounts(), inventory: [],
+      version: 3, economyVersion: ECONOMY_VERSION, balance: START_BALANCE, cases: emptyCounts(), keys: {}, inventory: [],
       settings: { sound: true, fast: false },
       stats: { spent: 0, earned: 0, opens: 0, sold: 0, bestDrop: null, workActions: 0, upgradeAttempts: 0, upgradeWins: 0, upgradeLostValue: 0, caseOpens: emptyCounts(), rarities: Object.fromEntries(Object.keys(RARITIES).map(id => [id, 0])) },
       progress: { xp: 0, discovered: {}, claimedMissions: [], claimedCollections: [], legacyAccess: [] },
@@ -487,18 +488,23 @@
 
     function restore(raw) {
       if (!raw || typeof raw !== "object" || ![1, 2, 3].includes(raw.version)) throw new Error("Nieobsługiwana wersja zapisu.");
+      if (Object.hasOwn(raw, "economyVersion") && ![1, ECONOMY_VERSION].includes(raw.economyVersion)) throw new Error("Nieobsługiwana wersja gospodarki.");
       const next = initialState(now());
       const migrating = raw.version === 1;
       const expanded = raw.version < 3;
+      const economyMigrating = raw.economyVersion !== ECONOMY_VERSION;
+      const legacyKeys = emptyCounts();
       let repaired = false;
       let walletRepaired = false;
       for (const field of ["balance"]) {
         if (integer(raw[field])) next[field] = raw[field]; else repaired = true;
       }
-      for (const group of ["cases", "keys"]) {
-        for (const box of CASES) {
-          if (raw[group] && integer(raw[group][box.id], MAX_COUNT)) next[group][box.id] = raw[group][box.id];
-          else if (!raw[group] || Object.hasOwn(raw[group], box.id) || !expanded) repaired = true;
+      for (const box of CASES) {
+        if (raw.cases && integer(raw.cases[box.id], MAX_COUNT)) next.cases[box.id] = raw.cases[box.id];
+        else if (!raw.cases || Object.hasOwn(raw.cases, box.id) || !expanded) repaired = true;
+        if (economyMigrating) {
+          if (raw.keys && integer(raw.keys[box.id], MAX_COUNT)) legacyKeys[box.id] = raw.keys[box.id];
+          else if (!raw.keys || Object.hasOwn(raw.keys, box.id) || !expanded) repaired = true;
         }
       }
       const seen = new Set();
@@ -556,7 +562,7 @@
         // Existing inventory is verifiable history; historic aggregate counters alone
         // do not award new XP or fake complete collections after this update.
         next.progress.xp = next.inventory.length * OPEN_XP + countDiscoveries(next.progress.discovered) * DISCOVERY_XP;
-        next.progress.legacyAccess = CASES.filter(box => next.cases[box.id] || next.keys[box.id]).map(box => box.id);
+        next.progress.legacyAccess = CASES.filter(box => next.cases[box.id] || legacyKeys[box.id]).map(box => box.id);
         for (const item of next.inventory) {
           if (Object.hasOwn(next.stats.caseOpens, item.caseId)) next.stats.caseOpens[item.caseId] = Math.min(MAX_COUNT, next.stats.caseOpens[item.caseId] + 1);
           next.stats.rarities[item.rarity] = Math.min(MAX_COUNT, next.stats.rarities[item.rarity] + 1);
@@ -592,9 +598,18 @@
           walletRepaired = true;
         }
       }
+      // restore() only receives a payload accepted by the integrity guard. Old
+      // keys are valued at the last key price, then exchanged once for cash.
+      // The marker, empty keys and matching ledger credit are sealed together.
+      const keyRefund = economyMigrating ? CASES.reduce((sum, box) => sum + legacyKeys[box.id] * (box.legacyKeyPrice || 0), 0) : 0;
+      if (keyRefund) {
+        next.balance = Math.min(MAX_MONEY, next.balance + keyRefund);
+        next.stats.earned = Math.min(MAX_MONEY, next.stats.earned + keyRefund);
+      }
       if (walletRepaired) next.storageWarning = "Saldo nie zgadzało się z historią zarobków i wydatków. Przywrócono poprawną kwotę; ekwipunek i postęp zostały zachowane.";
       else if (repaired) next.storageWarning = "Naprawiono uszkodzone dane zapisu. Poprawne przedmioty i postęp zostały zachowane.";
       else if (migrating) next.storageWarning = "Zapis zaktualizowano: zachowano środki i ekwipunek, wyceny dopasowano do nowego rynku. Album odzyskał skiny z ekwipunku i najlepszy historyczny drop; sprzedanych wcześniej skinów nie da się odtworzyć.";
+      if (keyRefund) next.storageWarning = (next.storageWarning ? next.storageWarning + " " : "") + `Usunięto klucze. Zwrócono ich wartość: $${(keyRefund / 100).toFixed(2)}. Posiadane skrzynki otworzysz bez dodatkowej opłaty.`;
       return next;
     }
 
@@ -605,7 +620,7 @@
     if (initialRead.kind === "valid" || initialRead.kind === "legacy") {
       try {
         state = restore(initialRead.raw);
-        sealOnStartup = initialRead.kind === "legacy" || initialRead.recovered;
+        sealOnStartup = initialRead.kind === "legacy" || initialRead.recovered || initialRead.raw.economyVersion !== ECONOMY_VERSION;
         if (initialRead.recovered) state.storageWarning = recoveryWarning;
         else if (initialRead.error) state.storageWarning = initialRead.error;
       } catch (_) {
@@ -645,7 +660,14 @@
         // Retain unsaved in-memory progress when a full disk still contains the
         // previous payload. A repeated invalid blob is never an accepted read.
         if (observed.payload !== lastPayload) {
-          try { state = restore(observed.raw); lastPayload = observed.payload; }
+          try {
+            state = restore(observed.raw);
+            lastPayload = observed.payload;
+            // Commit migration even when the next requested action is rejected.
+            // A failed disk write retains the same in-memory migrated state;
+            // rereading the unchanged old payload never credits it a second time.
+            if (observed.raw.economyVersion !== ECONOMY_VERSION) save(true);
+          }
           catch (_) {
             state.storageWarning = "Nie udało się odczytać zmienionego zapisu. Zachowano bieżący postęp w tej karcie.";
             return { ok: false, changed: JSON.stringify(state) !== previous, error: state.storageWarning };
@@ -724,7 +746,7 @@
         id: definition.id, title: definition.title, description: definition.description,
         current: Math.min(definition.current, definition.target), target: definition.target,
         completed: definition.current >= definition.target, claimed: week.claimed.includes(definition.id),
-        reward: { cases: { [definition.caseId]: definition.count }, keys: { [definition.caseId]: definition.count }, xp: definition.xp, cosmetic: definition.cosmetic || null }
+        reward: { cases: { [definition.caseId]: definition.count }, xp: definition.xp, cosmetic: definition.cosmetic || null }
       }));
       return { weekId: week.weekId, startAt: week.startAt, endsAt: week.endsAt, missions,
         claimedCount: missions.filter(mission => mission.claimed).length, total: missions.length };
@@ -737,11 +759,11 @@
         if (!mission) return fail("Nie znaleziono tego zadania tygodniowego.");
         if (mission.claimed) return fail("Nagroda za to zadanie tygodniowe jest już odebrana.");
         if (!mission.completed) return fail("To zadanie tygodniowe nie jest jeszcze ukończone.");
-        for (const group of ["cases", "keys"]) for (const [caseId, count] of Object.entries(mission.reward[group])) {
-          if (!caseIndex[caseId] || state[group][caseId] + count > MAX_COUNT) return fail("Brak miejsca na zasoby z nagrody. Zużyj kilka skrzynek lub kluczy.");
+        for (const [caseId, count] of Object.entries(mission.reward.cases)) {
+          if (!caseIndex[caseId] || state.cases[caseId] + count > MAX_COUNT) return fail("Brak miejsca na skrzynki z nagrody. Otwórz kilka posiadanych skrzynek.");
         }
         state.weekly = week;
-        for (const group of ["cases", "keys"]) for (const [caseId, count] of Object.entries(mission.reward[group])) state[group][caseId] += count;
+        for (const [caseId, count] of Object.entries(mission.reward.cases)) state.cases[caseId] += count;
         addXP(mission.reward.xp);
         if (mission.reward.cosmetic && !state.showcase.unlockedThemes.includes(mission.reward.cosmetic)) state.showcase.unlockedThemes.push(mission.reward.cosmetic);
         state.weekly.claimed.push(mission.id);
@@ -801,7 +823,7 @@
     }
     function recordOpening(box, item, fresh) {
       const at = item.createdAt;
-      const cost = box.price + box.keyPrice;
+      const cost = box.price;
       const records = state.records;
       records.opens = Math.min(MAX_MONEY, records.opens + 1);
       records.openingCost = Math.min(MAX_MONEY, records.openingCost + cost);
@@ -918,20 +940,20 @@
       });
     }
 
-    function buy(caseId, quantity, kind) {
+    function buy(caseId, quantity) {
       return transaction(() => {
         const box = caseIndex[caseId];
         if (!box) return fail("Nie znaleziono tej skrzynki.");
         const access = getCaseAccess(caseId);
         if (!access.unlocked) return fail(`Ta kolekcja odblokuje się na poziomie ${access.requiredLevel}. Zdobywaj XP, otwierając skrzynki i wykonując zadania.`);
         if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 999) return fail("Wybierz liczbę od 1 do 999.");
-        if (state[kind][caseId] + quantity > MAX_COUNT) return fail("Masz już maksymalną liczbę tych przedmiotów.");
-        const total = (kind === "cases" ? box.price : box.keyPrice) * quantity;
+        if (state.cases[caseId] + quantity > MAX_COUNT) return fail("Masz już maksymalną liczbę tych skrzynek.");
+        const total = box.price * quantity;
         if (state.balance < total) return fail("Za mało środków. Zajrzyj do panelu zarabiania.");
         state.balance -= total;
-        state[kind][caseId] += quantity;
+        state.cases[caseId] += quantity;
         addStat("spent", total);
-        return { ok: true, quantity, total, caseId, kind };
+        return { ok: true, quantity, total, caseId, kind: "cases" };
       });
     }
 
@@ -1005,12 +1027,10 @@
         const access = getCaseAccess(caseId);
         if (!access.unlocked) return fail(`Ta kolekcja odblokuje się na poziomie ${access.requiredLevel}.`);
         if (state.cases[caseId] < quantity) return fail(`Potrzebujesz ${quantity} pasujących skrzynek. Kup brakujące w sklepie.`);
-        if (state.keys[caseId] < quantity) return fail(`Potrzebujesz ${quantity} pasujących kluczy do tych skrzynek.`);
         if (state.inventory.length + quantity > MAX_INVENTORY) return fail("Ekwipunek jest pełny. Sprzedaj kilka przedmiotów.");
         const items = Array.from({ length: quantity }, () => createItem(box));
         const openingXP = getOpeningXP(caseId);
         state.cases[caseId] -= quantity;
-        state.keys[caseId] -= quantity;
         state.inventory.unshift(...items);
         addStat("opens", quantity);
         state.stats.caseOpens[box.id] = Math.min(MAX_COUNT, state.stats.caseOpens[box.id] + quantity);
@@ -1097,9 +1117,9 @@
     function getResources() {
       return {
         cases: CASES.filter(box => state.cases[box.id] > 0).map(box => ({ caseId: box.id, count: state.cases[box.id], name: box.name, image: box.image || null })),
-        keys: CASES.filter(box => state.keys[box.id] > 0).map(box => ({ caseId: box.id, count: state.keys[box.id], name: `Klucz · ${box.name}`, image: box.keyImage || null })),
+        keys: [],
         totalCases: Object.values(state.cases).reduce((sum, count) => sum + count, 0),
-        totalKeys: Object.values(state.keys).reduce((sum, count) => sum + count, 0)
+        totalKeys: 0
       };
     }
 
@@ -1192,8 +1212,8 @@
         listeners.add(callback);
         return () => listeners.delete(callback);
       },
-      buyCase: (caseId, quantity = 1) => buy(caseId, quantity, "cases"),
-      buyKey: (caseId, quantity = 1) => buy(caseId, quantity, "keys"),
+      buyCase: (caseId, quantity = 1) => buy(caseId, quantity),
+      buyKey: () => fail("System kluczy został usunięty. Do otwarcia wystarczy skrzynka."),
       openCase, openCases,
       previewItem(caseId) { return caseIndex[caseId] ? createItem(caseIndex[caseId]) : null; },
       sellItem: id => sellItems([id]), sellItems, saleValue,
@@ -1211,7 +1231,7 @@
     });
   }
 
-  return Object.freeze({ CASES, SKINS, RARITIES, WEARS, STORAGE_KEY, STORAGE_BACKUP_KEY, START_BALANCE, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, MAX_INVENTORY,
+  return Object.freeze({ CASES, SKINS, RARITIES, WEARS, STORAGE_KEY, STORAGE_BACKUP_KEY, START_BALANCE, ECONOMY_VERSION, SALE_FEE, DAILY_REWARD, WORK_COOLDOWN, MAX_LEVEL, MAX_INVENTORY,
     OPEN_XP, DISCOVERY_XP, MISSIONS, OPEN_QUANTITIES, UPGRADE_HOUSE_EDGE, UPGRADE_MAX_CHANCE, SHOWCASE_SLOTS, SHOWCASE_THEMES, HISTORY_LIMIT,
     getDropChances, getRarityChances, getOpeningXP, getSkinPrice, getPatternInfo, createGame });
 });

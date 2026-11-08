@@ -1,4 +1,4 @@
-# Balans SKINLAB v5
+# Balans SKINLAB v5.1
 
 Manifesty i migawka Skinport: **5 listopada 2026**. Pobrano ceny o **19:06:49 UTC**. Wszystkie kwoty dotyczą wirtualnej rozgrywki; działają offline i nie zmieniają się automatycznie.
 
@@ -10,7 +10,7 @@ Wycena identycznej fazy, edycji i zużycia jest wspólna dla wszystkich skrzynek
 
 Nowy drop ma **dokładną cenę z tabeli wybranego wariantu**, bez rozrzutu ±4%. StatTrak ma 10% szansy dla obsługujących go skinów oraz własną cenę, zamiast wspólnego mnożnika ×1,3. Otwarcie nie losuje Souvenir; tę edycję można wybrać jako cel upgradera. Sprzedaż wypłaca 90% zapisanej wartości, zaokrąglone w dół do centa dla każdego egzemplarza. Wartości przedmiotów z zapisów v2/v3 są zachowywane; nie przeliczamy ich na aktualną migawkę.
 
-Skrzynka i pasujący klucz są osobnymi zakupami. Oficjalne klucze kosztują $2,49. Klucze customów i symulacji kolekcji są dostosowane do wartości puli, do maksymalnie $2,49. Koszt skrzynki może zawierać jawną dopłatę balansującą. Ceny pojemników to koszt rozgrywki, nie deklaracja kursu rynkowego.
+Każda skrzynka jest gotowa do otwarcia bez dodatkowych zasobów. Jej cena to pełny dotychczasowy koszt skrzynki i klucza, dlatego usunięcie osobnego zakupu nie zmienia kosztu otwarcia ani zwrotu oczekiwanego. Koszt skrzynki może zawierać jawną dopłatę balansującą. Ceny pojemników to koszt rozgrywki, nie deklaracja kursu rynkowego.
 
 ## Losowanie i wartość oczekiwana
 
@@ -18,7 +18,7 @@ Oficjalne skrzynki stosują **79,92% / 15,98% / 3,20% / 0,64% / 0,26%** dla kole
 
 Obliczenie analityczne uwzględnia wagi, udział zakresów float w stanach, dokładne ceny zwykłe i StatTrak, szansę StatTrak oraz prowizję i zaokrąglenie sprzedaży każdego skina. Cena celuje w około 64% zwrotu; każdy pojemnik musi pozostać poniżej **65% oczekiwanego zwrotu netto**. Zaokrąglenie kosztu w centach ma zauważalny wpływ na bardzo tanie kolekcje.
 
-| Grupa | Liczba | Koszt pojemnika i klucza | Zwrot netto z metadanych, przybliżony |
+| Grupa | Liczba | Pełny koszt pojemnika | Zwrot netto z metadanych, przybliżony |
 | --- | ---: | ---: | ---: |
 | Oficjalne skrzynki | 42 | $2.64–$98.52 | 23.3–64.0% |
 | Autorskie skrzynki | 32 | $0.23–$2006.44 | 60.9–64.0% |
@@ -47,13 +47,13 @@ Wkład jest zużywany przy sukcesie i porażce. Sukces daje dokładnie wybrany w
 
 ## Kariera i pozostałe nagrody
 
-Otwarcie 1/2/3/5 pojemników to jedna atomowa transakcja: wszystkie zasoby i miejsca są sprawdzane przed losowaniem. Brak klucza lub miejsca odrzuca całą partię. Pominięcie animacji nie zmienia nagród. Animacja zwykła trwa 4,8 s, szybka 1,5 s.
+Otwarcie 1/2/3/5 pojemników to jedna atomowa transakcja: wszystkie zasoby i miejsca są sprawdzane przed losowaniem. Brak odpowiedniej liczby skrzynek lub miejsca odrzuca całą partię. Pominięcie animacji nie zmienia nagród. Animacja zwykła trwa 4,8 s, szybka 1,5 s.
 
 Otwarcie za co najmniej $2,49 daje 25 XP i 10 XP za nowe odkrycie. Dla tańszego kosztu stosowana jest skala min(1; koszt / 249 centów), a XP jest zaokrąglane w dół z minimum 1. Budget Run za $0.23 daje 2 XP za otwarcie i 1 XP za nowe odkrycie. Praca, bonus, zakupy, sprzedaż i podglądy nie dają XP.
 
 Kampania ma 18 nagród. Finał wymaga poziomu 20, 500 otwarć, 180 odkryć i 18 odwiedzonych pul; nóż nie jest wymagany. Oficjalny album wymaga wszystkich zwykłych skinów, custom i symulacja kolekcji całej puli. Nagroda albumu wynosi jednorazowo $5 i 200 XP. Odkrycia pozostają po sprzedaży i użyciu w upgraderze.
 
-Praca daje $0,10–$0,18 z sekundą odstępu, a bonus dzienny $2,50. Cztery tygodniowe cele przyznają razem 170 XP i zasoby do pięciu otwarć: Dreams & Nightmares, Revolution, dwa Budget Run i Gallery, wszystkie z kluczami, łącznie $9.52 według tej migawki. Nagrody są jednorazowe w danym lokalnym tygodniu rozpoczynającym się w poniedziałek. Upgrader nie zalicza celów tygodnia. Motywy gabloty pozostają odblokowane, a cofnięcie zegara nie odtwarza odebranych nagród.
+Praca daje $0,10–$0,18 z sekundą odstępu, a bonus dzienny $2,50. Cztery tygodniowe cele przyznają razem 170 XP i zasoby do pięciu otwarć: Dreams & Nightmares, Revolution, dwa Budget Run i Gallery, gotowych do otwarcia, łącznie $9.52 według tej migawki. Nagrody są jednorazowe w danym lokalnym tygodniu rozpoczynającym się w poniedziałek. Upgrader nie zalicza celów tygodnia. Motywy gabloty pozostają odblokowane, a cofnięcie zegara nie odtwarza odebranych nagród.
 
 Historia ma limit 200 zdarzeń. Łączne koszty, wartości i rekordy są poza limitem; pozostają też po sprzedaży przedmiotów. Wyświetlany bilans dropów po hipotetycznej prowizji minus koszt nie dopisuje pieniędzy do portfela. Gablota i eksport PNG również nie zmieniają ekonomii.
 
@@ -63,7 +63,9 @@ Suma kontrolna stanu oraz zweryfikowana kopia wykrywają proste podmiany danych.
 
 Identyfikatory i kolejność wszystkich wcześniejszych 60 pul są zachowane. Nowe pola seeda, edycji i pochodzenia ceny rozszerzają format v3 bez resetu. Test pełnej kampanii rozgrywa 500 otwarć, sprzedaje dropy, zarabia przez zwykłą pracę i odbiera misje bez dopisywania zasobów do stanu.
 
-Pełne przejście kontrolne z ziarnem 0x43415245 osiągnęło poziom 20 po 500 otwarciach: 126 odblokowanych pul, 94 odwiedzone pule, 384 odkrycia i wszystkie 18 misji. Wykonano 5404 zwykłe akcje pracy, czyli około 90 minut przy sekundowym odstępie, oprócz animacji i przeglądania. To pojedynczy powtarzalny przebieg, nie obietnica czasu dla każdego gracza.
+Aktualizacja 5.1 zachowuje format stanu v3 i oznacza nową ekonomię jako economyVersion=2. Wszystkie posiadane wcześniej skrzynki otwierają się bez dopłaty. Dawne klucze są usuwane i jednorazowo zwracane w gotówce po 100% nominalnej dawnej ceny, także gdy były nagrodą. Zwrot trafia do salda i stats.earned, dzięki czemu kontrola salda nadal uwzględnia wszystkie wpływy. Zapis zachowuje puste keys tylko dla zgodności; nie jest to zasób rozgrywki. Znacznik migracji zapobiega ponownemu zwrotowi po przeładowaniu i synchronizacji kart. Koszty wcześniejszych otwarć pozostają zapisane w historii.
+
+Pełne przejście kontrolne z ziarnem 0x43415245 osiągnęło poziom 20 po 500 otwarciach: 126 odblokowanych pul, 94 odwiedzone pule, 372 odkrycia i wszystkie 18 misji. Wykonano 3359 zwykłych akcji pracy, czyli około 56 minut przy sekundowym odstępie, oprócz animacji i przeglądania. To pojedynczy powtarzalny przebieg, nie obietnica czasu dla każdego gracza.
 
 Kontrole uruchamia polecenie:
 

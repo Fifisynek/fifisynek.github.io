@@ -1,4 +1,4 @@
-# SKINLAB — Case Opener Simulator v5
+# SKINLAB — Case Opener Simulator v5.1
 
 Przeglądarkowy symulator skrzynek CS2 z atlasem skinów i patternów, kampanią, upgraderem, własną gablotą i wyzwaniami tygodniowymi. Gra działa lokalnie, bez konta Steam i bez instalowania bibliotek. Wszystkie pieniądze i przedmioty są wirtualne.
 
@@ -24,26 +24,26 @@ python -m http.server 4173 --bind 127.0.0.1
 
 ## Katalog
 
-W wersji 5 jest **126 pul do otwierania**:
+W wersji 5.1 jest **126 pul do otwierania**:
 
 - **42 oficjalne skrzynki na broń**: wszystkie pozycje typu Case z manifestu CSGO-API pobranego 5 listopada 2026, z pełnymi pulami zwykłych i specjalnych przedmiotów.
 - **32 autorskie skrzynki SKINLAB**: między innymi Hardened Forge, Fade Studio, Marble Vault, Tiger Temple, osobne Doppler P1–P4 i Gamma P1–P4 oraz Ruby Reserve, Sapphire Club, Emerald Room i Pearl Archive.
-- **50 symulacji kolekcji**: między innymi Dust, Aztec, Vertigo, Nuke, Office, Assault, Cobblestone i kolekcje operacji. W tej grze otwierasz je za pojemnik i pasujący klucz; jest to mechanika symulatora, nie odwzorowanie sposobu zdobywania tych kolekcji w CS2.
-- **2 symulacje terminali**: Genesis Terminal i Dead Hand Terminal. Mają własne tabele losowania i korzystają z pojemnika oraz klucza; nie odtwarzają ofert rzeczywistych terminali Valve.
+- **50 symulacji kolekcji**: między innymi Dust, Aztec, Vertigo, Nuke, Office, Assault, Cobblestone i kolekcje operacji. W tej grze kupujesz pojemnik gotowy do otwarcia; jest to mechanika symulatora, nie odwzorowanie sposobu zdobywania tych kolekcji w CS2.
+- **2 symulacje terminali**: Genesis Terminal i Dead Hand Terminal. Mają własne tabele losowania i korzystają z gotowego do otwarcia pojemnika; nie odtwarzają ofert rzeczywistych terminali Valve.
 
 Baza obejmuje **2126 rzeczywistych pozycji katalogowych**, w tym osobne fazy Doppler/Gamma Doppler, noże i rękawice. Wszystkie można teraz zdobyć przez otwieranie. To **1974 wykończenia po połączeniu faz**, **9305 kombinacji zwykły skin–stan** oraz **18 202 dostępne kombinacje wykończenia, fazy, stanu i edycji** po uwzględnieniu wycen StatTrak i Souvenir. Numerów seed nie liczymy jako kolejnych skinów. Zakres nie obejmuje naklejek, agentów ani wszystkich rodzajów pojemników kosmetycznych.
 
 ## Otwieranie i ekwipunek
 
-1. Kup skrzynkę oraz **osobno pasujący klucz**. Ekwipunek pokazuje zakładki wszystkich przedmiotów, skinów, skrzynek i kluczy, wraz z ich ilościami.
-2. Wybierz **1, 2, 3 lub 5 otwarć**. Każdy wynik jest niezależny. Potrzebujesz tylu skrzynek i pasujących kluczy, ile wynosi wybrana liczba.
+1. Kup **skrzynkę gotową do otwarcia**. Widoczna cena obejmuje cały koszt; nie ma dodatkowych zakupów. Ekwipunek pokazuje zakładki wszystkich przedmiotów, skinów i skrzynek, wraz z ich ilościami.
+2. Wybierz **1, 2, 3 lub 5 otwarć**. Każdy wynik jest niezależny. Potrzebujesz tylu skrzynek, ile wynosi wybrana liczba.
 3. Obejrzyj przewijające się taśmy z zaznaczonym punktem zatrzymania. Możesz włączyć szybkie otwieranie albo pominąć trwającą animację; nie losuje to ponownie nagrody. Zwykła animacja trwa 4,8 sekundy, szybka 1,5 sekundy.
 4. Zachowaj drop albo sprzedaj go za **90% wyświetlanej wartości**. Prowizja wynosi 10%; wypłata jest zaokrąglana w dół do centa osobno dla każdego przedmiotu.
 5. Oznacz ulubione skiny gwiazdką, aby chronić je przed sprzedażą i użyciem w upgraderze.
 
 Skiny umieszczone w gablocie również są chronione. Sprzedaż zbiorcza je pomija, a upgrader nie pokazuje ich jako dostępnego wkładu. Najpierw usuń przedmiot z gabloty; ręcznie ustawiona gwiazdka nadal obowiązuje.
 
-Brak części zasobów albo miejsca w ekwipunku odrzuca całe otwarcie zbiorcze. Gra nie zużywa wtedy części kluczy. Wszystkie wyniki i zużycie zasobów zapisują się przed animacją.
+Brak odpowiedniej liczby skrzynek albo miejsca w ekwipunku odrzuca całe otwarcie zbiorcze. Gra nie zużywa wtedy żadnej skrzynki. Wszystkie wyniki i zużycie zasobów zapisują się przed animacją. Zakup aktualizuje liczniki i saldo w miejscu, bez ponownego wczytywania widoku skrzynki.
 
 Każdy skin ma właściwy zakres float i dozwolone stany: **Factory New, Minimal Wear, Field-Tested, Well-Worn albo Battle-Scarred**. Nie każdy skin istnieje we wszystkich stanach. Noże Vanilla mają oznaczenie **Bez zużycia**, bez udawania stanu FN. Zużycie, float, faza, edycja i seed są zachowywane w zapisie. Ekwipunek ma filtr stanu; wyszukiwarka znajduje też fazę, StatTrak, Souvenir i numer seeda.
 
@@ -85,7 +85,7 @@ Otwórz **Kariera → Tydzień**. Cztery cele obejmują liczbę otwarć, różne
 
 Tydzień trwa od lokalnego poniedziałku o 00:00 do następnego poniedziałku. Liczą się nowe otwarcia z tego okresu, również każde otwarcie w serii. Upgrader, kupowanie i sprzedaż nie nabijają celów tygodniowych. Nagrodę odbiera się raz, przed zmianą tygodnia; odebranie w drugiej karcie jej nie powiela. Cofnięcie zegara nie otwiera ponownie starszego tygodnia w zachowanym zapisie.
 
-Pełen tydzień daje po jednym zestawie skrzynka + klucz Dreams & Nightmares, Revolution i Gallery oraz dwa zestawy Budget Run. Misje przyznają odpowiednio 30, 40, 40 i 60 XP. Ostatnia odblokowuje rotujący motyw gabloty, który zostaje na stałe. Nagrody nie dodają bezpośrednio gotówki. Kolejny tydzień rozpoczyna postęp nowych zadań od zera.
+Pełen tydzień daje po jednej gotowej do otwarcia skrzynce Dreams & Nightmares, Revolution i Gallery oraz dwie Budget Run. Misje przyznają odpowiednio 30, 40, 40 i 60 XP. Ostatnia odblokowuje rotujący motyw gabloty, który zostaje na stałe. Nagrody nie dodają bezpośrednio gotówki. Kolejny tydzień rozpoczyna postęp nowych zadań od zera.
 
 ## Historia i rekordy
 
@@ -93,11 +93,11 @@ Otwórz **Kariera → Historia** albo skrót w ekwipunku. Dziennik zachowuje **2
 
 Trwałe rekordy pokazują najdroższy drop ze skrzynki, najrzadszy konkretny wariant według szansy jego wylosowania, najniższy float i udane ulepszenie przy najniższej szansie. Szansa wariantu nie uwzględnia dodatkowo jego zużycia ani StatTrak. Rekordy pozostają po usunięciu starszych zdarzeń z dziennika.
 
-Bilans otwarć to **suma wartości dropów po prowizji sprzedaży minus koszt otwartych skrzynek i kluczy**. To miara wyników symulacji, a nie zmiana portfela czy suma faktycznych sprzedaży. Koszt jest zapisywany w chwili otwarcia. Historia, bilans i nowe rekordy zaczynają się od tej aktualizacji: wcześniejszych, niezapisanych wyników nie da się odtworzyć. Dotychczasowy ekwipunek, saldo, statystyki i kariera pozostają zachowane.
+Bilans otwarć to **suma wartości dropów po prowizji sprzedaży minus pełny koszt otwartych skrzynek**. To miara wyników symulacji, a nie zmiana portfela czy suma faktycznych sprzedaży. Koszt jest zapisywany w chwili otwarcia. Historia, bilans i nowe rekordy zaczynają się od tej aktualizacji: wcześniejszych, niezapisanych wyników nie da się odtworzyć. Dotychczasowy ekwipunek, saldo, statystyki i kariera pozostają zachowane.
 
 ## Cel gry
 
-Zaczynasz ze **$100** i pierwszym poziomem kolekcjonera. Standardowe otwarcie daje **25 XP**, a pierwsze odkrycie dodatkowo **10 XP**. **Otwarcia tańsze niż $2,49 dają proporcjonalnie mniej XP**. Budget Run za $0,25 daje 2 XP i 1 XP za nowe odkrycie. Wartość XP jest podana przy skrzynce. Kolejny stan lub StatTrak nie daje ponownie nagrody odkrycia; odrębna faza Doppler jest odrębnym odkryciem.
+Zaczynasz ze **$100** i pierwszym poziomem kolekcjonera. Standardowe otwarcie daje **25 XP**, a pierwsze odkrycie dodatkowo **10 XP**. **Otwarcia tańsze niż $2,49 dają proporcjonalnie mniej XP**. Budget Run za $0,23 daje 2 XP i 1 XP za nowe odkrycie. Wartość XP jest podana przy skrzynce. Kolejny stan lub StatTrak nie daje ponownie nagrody odkrycia; odrębna faza Doppler jest odrębnym odkryciem.
 
 Kampania ma **18 jednorazowych zadań w sześciu rozdziałach**, z nagrodami w gotówce i XP. Następny rozdział otwiera się po odebraniu nagród poprzedniego. Poziomy odblokowują dalsze skrzynki i customy.
 
@@ -129,11 +129,13 @@ Otwarcia i upgrader mają ujemną wartość oczekiwaną. Pojedynczy drogi drop m
 
 ## Zapis i aktualizacja
 
-Gotówka, klucze, skrzynki, skiny, albumy, ulubione, kariera, statystyki i ostatni wynik upgradera zapisują się automatycznie w `localStorage`. Stare zapisy wersji 1 i 2 są wykrywane automatycznie. **Wersja 2 zachowuje ceny i identyfikatory posiadanych egzemplarzy, zasoby, XP i odebrane nagrody**. Wersja 1 otrzymuje ceny nowej ekonomii i odzyskuje odkrycia z zachowanych przedmiotów.
+Gotówka, skrzynki, skiny, albumy, ulubione, kariera, statystyki i ostatni wynik upgradera zapisują się automatycznie w `localStorage`. Stare zapisy wersji 1 i 2 są wykrywane automatycznie. **Wersja 2 zachowuje ceny i identyfikatory posiadanych egzemplarzy, zasoby, XP i odebrane nagrody**. Wersja 1 otrzymuje ceny nowej ekonomii i odzyskuje odkrycia z zachowanych przedmiotów.
 
 Wersja 4 dodała do zapisu gablotę, odblokowane motywy, tydzień, historię i rekordy. Wcześniejsze zapisy formatu 3 są rozszerzane automatycznie. Wersja 5 dodaje seed, edycję i metadane pochodzenia ceny. Zachowuje wartości posiadanych egzemplarzy z zapisów v2/v3 oraz identyfikatory wszystkich wcześniejszych 60 pul. Nie dopisuje seedów do starych przedmiotów. Nie trzeba usuwać danych ani zaczynać kampanii od nowa.
 
-Zapis jest teraz sprawdzany za pomocą sumy kontrolnej całego stanu, a drugi klucz przechowuje zweryfikowaną kopię. Ochrona włącza się przy uruchomieniu gry, również przed pierwszym zakupem. Prosta podmiana `balance`, XP, ceny przedmiotu lub liczby kluczy powoduje odrzucenie zmienionych danych i odzyskanie ostatniego poprawnego zapisu. Kontrola działa podczas wczytywania, synchronizacji kart i przed każdą transakcją. Usunięcie samej sumy kontrolnej nie otwiera ponownie migracji starego zapisu, jeśli istnieje chroniona kopia.
+**Wersja 5.1 usuwa system kluczy.** Posiadane skrzynki pozostają w ekwipunku i otwierają się bez dopłaty. Każdy dawny klucz jest jednorazowo wymieniany na gotówkę po pełnej dotychczasowej cenie tego typu, również jeżeli pochodził z nagrody. Zwrot zwiększa saldo i licznik łącznych wpływów; ponowne uruchomienie ani druga karta nie przyznają go ponownie. Nowa cena skrzynki obejmuje dawną sumę ceny skrzynki i klucza, więc koszt kolejnych otwarć pozostaje taki sam. Historia zachowuje koszty zapisane w chwili wcześniejszych otwarć.
+
+Zapis jest teraz sprawdzany za pomocą sumy kontrolnej całego stanu, a drugi klucz przechowuje zweryfikowaną kopię. Ochrona włącza się przy uruchomieniu gry, również przed pierwszym zakupem. Prosta podmiana `balance`, XP, ceny przedmiotu lub liczby skrzynek powoduje odrzucenie zmienionych danych i odzyskanie ostatniego poprawnego zapisu. Kontrola działa podczas wczytywania, synchronizacji kart i przed każdą transakcją. Usunięcie samej sumy kontrolnej nie otwiera ponownie migracji starego zapisu, jeśli istnieje chroniona kopia.
 
 Przy pierwszej aktualizacji niechronionego zapisu gra sprawdza saldo względem `$100 + łączne wpływy − łączne wydatki`, o ile historyczne liczniki są poprawne i nie osiągnęły limitu. Pozwala to naprawić wcześniej podmienioną kwotę bez usuwania ekwipunku i kariery. Nie jest to pełny audyt dawnych transakcji. Gdy obie kopie są uszkodzone i nie ma poprawnego stanu w otwartej karcie, gra wyświetla ostrzeżenie i rozpoczyna nową sesję; przy samym wczytaniu nie nadpisuje uszkodzonych kopii.
 
@@ -173,5 +175,7 @@ Testy ochrony zapisu wykonują również podmianę salda w formie komendy z kons
 Regresje sprawdzają również dopasowanie i ochronę dziewięciu miejsc gabloty, eksport obrazka, jednokrotne nagrody tygodniowe, zmianę tygodnia i cofnięcie zegara, historię 200 wyników oraz rekordy zachowywane po sprzedaży. Kontrole eksportu wykonują logikę rysowania i pobierania w Node; nie zastępują wizualnego sprawdzenia pliku w przeglądarce.
 
 Testy v5 kontrolują również wszystkie 60 wcześniejszych indeksów pul, dokładne ceny faz i edycji, seedy 0/999/1000, realne dane Fade i pokrycia, odczyt starych przedmiotów oraz atlas i podgląd patternu bez zmian zapisu.
+
+Kontrole v5.1 obejmują otwieranie bez kluczy, zachowanie pełnego kosztu zakupu, jednorazowe rozliczenie dawnych kluczy oraz zakupy aktualizujące liczniki bez ponownego tworzenia widoku skrzynki.
 
 Projekt fanowski, niezwiązany z Valve. CS2, Steam, nazwy i grafiki przedmiotów należą do ich właścicieli.
